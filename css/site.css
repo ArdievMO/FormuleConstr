@@ -1,0 +1,353 @@
+﻿body {
+    * {
+        box-sizing: border-box;
+        user-select: none; /* для удобства перетаскивания */
+    }
+
+    body {
+        font-family: 'Segoe UI', Roboto, system-ui, sans-serif;
+        background: #eef2f9;
+        margin: 0;
+        padding: 20px;
+        height: 100vh;
+        overflow: hidden;
+    }
+
+    .app {
+        display: flex;
+        gap: 20px;
+        height: 100%;
+        background: white;
+        border-radius: 28px;
+        box-shadow: 0 12px 30px rgba(0,0,0,0.1);
+        overflow: hidden;
+    }
+    /* левая панель – формулы */
+    .formula-panel {
+        width: 300px;
+        background: #fefefe;
+        border-right: 1px solid #e2e8f0;
+        display: flex;
+        flex-direction: column;
+        padding: 20px 12px;
+        overflow-y: auto;
+    }
+
+        .formula-panel h3 {
+            margin: 0 0 12px 0;
+            font-size: 1.3rem;
+            font-weight: 600;
+        }
+
+    .formula-list {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .formula-item {
+        background: #f1f5f9;
+        border: 1px solid #cbd5e1;
+        border-radius: 20px;
+        padding: 12px 14px;
+        font-family: 'Courier New', monospace;
+        font-size: 0.9rem;
+        cursor: grab;
+        transition: 0.2s;
+        text-align: center;
+    }
+
+        .formula-item:hover {
+            background: #e6edf8;
+            border-color: #3b82f6;
+            transform: translateY(-2px);
+        }
+
+    .drag-hint {
+        margin-top: 20px;
+        font-size: 12px;
+        color: #475569;
+        background: #f1f5f9;
+        border-radius: 20px;
+        padding: 10px;
+        text-align: center;
+    }
+    /* рабочая область */
+    .workspace {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        padding: 16px 20px 20px 16px;
+        background: #fafcff;
+        overflow: hidden;
+    }
+
+    .toolbar {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+        background: white;
+        padding: 8px 16px;
+        border-radius: 60px;
+        border: 1px solid #e2e8f0;
+        align-items: center;
+    }
+
+    .btn {
+        border: 1px solid #cbd5e1;
+        padding: 6px 18px;
+        border-radius: 40px;
+        font-weight: 500;
+        background: white;
+        cursor: pointer;
+        transition: 0.2s;
+    }
+
+    .btn-primary {
+        background: #3b82f6;
+        border-color: #3b82f6;
+        color: white;
+    }
+
+        .btn-primary:hover {
+            background: #2563eb;
+        }
+
+    .btn-outline.active {
+        background: #3b82f6;
+        color: white;
+        border-color: #3b82f6;
+    }
+
+    .status {
+        margin-left: auto;
+        background: #eef2ff;
+        padding: 5px 14px;
+        border-radius: 30px;
+        font-size: 0.75rem;
+    }
+    /* графическая область */
+    .graph-area {
+        position: relative;
+        flex: 1;
+        background: #ffffff;
+        border-radius: 28px;
+        border: 2px dashed #cbd5e1;
+        overflow: auto;
+        background-image: linear-gradient(#e2e8f0 1px, transparent 1px), linear-gradient(90deg, #e2e8f0 1px, transparent 1px);
+        background-size: 24px 24px;
+    }
+
+    .graph-inner {
+        position: relative;
+        min-height: 100%;
+        min-width: 100%;
+        height: 100%;
+        width: 100%;
+    }
+
+    .rectangles-layer {
+        position: relative;
+        z-index: 20;
+    }
+
+    .svg-layer {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        z-index: 15;
+    }
+    /* карточка формулы */
+    .formula-card {
+        position: absolute;
+        width: 290px;
+        background: #fffef7;
+        border-radius: 28px;
+        border: 2px solid #f59e0b;
+        box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        cursor: grab;
+        transition: box-shadow 0.1s;
+        backdrop-filter: blur(2px);
+        font-family: 'Segoe UI', sans-serif;
+        padding: 12px;
+    }
+
+        .formula-card:active {
+            cursor: grabbing;
+        }
+
+    .card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+    }
+
+    .formula-text {
+        background: #fef3c7;
+        border-radius: 40px;
+        padding: 6px 12px;
+        font-family: monospace;
+        font-weight: bold;
+        font-size: 0.85rem;
+        flex: 1;
+        margin-right: 8px;
+        text-align: center;
+    }
+
+    .delete-card {
+        background: #fee2e2;
+        border-radius: 40px;
+        width: 28px;
+        height: 28px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        cursor: pointer;
+        color: #b91c1c;
+    }
+    /* параметры */
+    .params-list {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        margin: 12px 0;
+    }
+
+    .param-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        background: #faf6e9;
+        padding: 6px 10px;
+        border-radius: 40px;
+    }
+
+    .port {
+        width: 16px;
+        height: 16px;
+        background: #3b82f6;
+        border-radius: 50%;
+        cursor: pointer;
+        transition: 0.1s;
+        flex-shrink: 0;
+    }
+
+        .port:hover {
+            transform: scale(1.2);
+            background: #1e40af;
+        }
+
+    .param-name {
+        width: 36px;
+        font-weight: bold;
+        font-family: monospace;
+        font-size: 0.9rem;
+    }
+
+    .param-value {
+        flex: 1;
+        font-family: monospace;
+        font-size: 0.85rem;
+    }
+
+    input.param-input {
+        width: 100%;
+        padding: 5px 8px;
+        border-radius: 30px;
+        border: 1px solid #cbd5e1;
+        background: white;
+        font-family: monospace;
+        outline: none;
+    }
+
+        input.param-input:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 2px rgba(59,130,246,0.2);
+        }
+
+    .param-output {
+        background: #e2e8f0;
+        padding: 5px 8px;
+        border-radius: 30px;
+        text-align: center;
+        font-weight: 500;
+    }
+
+    .remove-conn {
+        background: #fee2e2;
+        border: none;
+        border-radius: 30px;
+        width: 22px;
+        height: 22px;
+        font-size: 12px;
+        cursor: pointer;
+        color: #b91c1c;
+        margin-left: 4px;
+    }
+
+    .target-area {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: #eef2ff;
+        border-radius: 60px;
+        padding: 6px 12px;
+        margin-top: 6px;
+        cursor: pointer;
+    }
+
+    .target-output {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex: 1;
+    }
+
+    .target-port {
+        width: 20px;
+        height: 20px;
+        background: #f97316;
+        border-radius: 50%;
+        cursor: pointer;
+    }
+
+    .target-symbol {
+        font-weight: bold;
+        font-family: monospace;
+        font-size: 1rem;
+    }
+
+    .target-value {
+        background: #cbd5e1;
+        padding: 2px 10px;
+        border-radius: 40px;
+        font-family: monospace;
+        font-weight: bold;
+    }
+
+    .connections-panel {
+        margin-top: 14px;
+        background: #f8fafc;
+        border-radius: 20px;
+        padding: 8px 12px;
+        max-height: 130px;
+        overflow-y: auto;
+        font-size: 0.7rem;
+    }
+
+    .conn-badge {
+        background: white;
+        border-radius: 40px;
+        padding: 4px 10px;
+        display: inline-flex;
+        gap: 6px;
+        margin: 4px;
+        border: 1px solid #cbd5e1;
+    }
+}
