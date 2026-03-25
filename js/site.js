@@ -77,12 +77,12 @@ function redrawParamLines() {
         const marker = document.createElementNS("http://www.w3.org/2000/svg", "marker");
         marker.setAttribute("id", "arrowParam");
         marker.setAttribute("markerWidth", "8");
-        marker.setAttribute("markerHeight", "8");
-        marker.setAttribute("refX", "7");
-        marker.setAttribute("refY", "4");
+        marker.setAttribute("markerHeight", "7");
+        marker.setAttribute("refX", "9");
+        marker.setAttribute("refY", "5");
         marker.setAttribute("orient", "auto");
         const poly = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
-        poly.setAttribute("points", "0 0, 8 4, 0 8");
+        poly.setAttribute("points", "0 0, 9 5, 0 8");
         poly.setAttribute("fill", "#f97316");
         marker.appendChild(poly);
         defs.appendChild(marker);
@@ -155,16 +155,31 @@ function rebuildParamsList(rect) {
         const hasConn = paramConnections.some(c => c.targetRectId === rect.id && c.targetParam === v);
         const manualVal = rect.manualValues[v] !== undefined ? rect.manualValues[v] : '';
         if (hasConn) {
-            newHtml += `<div class="param-row"><div class="port" data-param="${v}"></div><div class="param-name">${v}</div><div class="param-value"><div class="param-output">🔗 связано</div></div></div>`;
+            newHtml += `
+            <div class="param-row">
+                <div class="port" data-param="${v}"></div>
+                <div class="param-name">${v}</div>
+                <div class="param-value">
+                    <div class="param-output">🔗 связано</div>
+                </div>
+            </div>`;
         } else {
-            newHtml += `<div class="param-row"><div class="port" data-param="${v}"></div><div class="param-name">${v}</div><div class="param-value"><input class="param-input" type="text" placeholder="число" value="${escapeHtml(manualVal)}"></div></div>`;
+            newHtml += `
+            <div class="param-row">
+                <div class="port" data-param="${v}"></div>
+                <div class="param-name">${v}</div>
+                <div class="param-value">
+                    <input class="param-input" type="text" placeholder="число" value="${escapeHtml(manualVal)}">
+                </div>
+            </div>`;
         }
     }
     container.innerHTML = newHtml;
     container.querySelectorAll('.port').forEach(port => {
         port.addEventListener('click', (e) => {
             e.stopPropagation();
-            if (!connectModeActive) return;
+            if (!connectModeActive)
+                return;
             const param = port.getAttribute('data-param');
             handlePortClick(rect.id, param, false);
         });
@@ -397,10 +412,10 @@ function createFormulaBlock(formulaEq, formulaName, varsArray, left, top, id = n
             </div>
             <div class="target-area" data-target-var="${targetVar}">
                 <div class="target-output">
-                    <div class="target-port"></div>
                     <div class="target-symbol">${targetVar}</div>
+                    <div class="target-value">?</div>
                 </div>
-                <div class="target-value">?</div>
+                <div class="target-port"></div>
             </div>
         `;
 
@@ -532,7 +547,12 @@ function makeDraggable(element, rectId) {
     function onMouseUp() { dragging = false; document.removeEventListener('mousemove', onMouseMove); document.removeEventListener('mouseup', onMouseUp); }
 }
 
-function escapeHtml(str) { return String(str).replace(/[&<>]/g, function (m) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m]; }); }
+function escapeHtml(str) {
+	return String(str).replace(/[&<>]/g, function (m) {
+		return { '&': '&amp;', '<': '&lt;', '>': '&gt;'
+		}[m];
+	});
+}
 
 // Drag & Drop из библиотеки
 function setupDragDrop() {
