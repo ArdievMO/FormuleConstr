@@ -1,29 +1,230 @@
-﻿// ---------------------- БАЗА ФОРМУЛ ----------------------
+﻿//--- БАЗА ФОРМУЛ ---
 const formulasLibrary = [
-    { name: "Давление", eq: "P = F/S", vars: ["P", "F", "S"] },
-    { name: "Плотность", eq: "ρ = m/V", vars: ["ρ", "m", "V"] },
-    { name: "Давление жидкости", eq: "P = ρ·g·h", vars: ["P", "ρ", "g", "h"] },
-    { name: "Сила тяжести", eq: "Fт = m·g", vars: ["Fт", "m", "g"] },
-    { name: "Архимедова сила", eq: "Fₐ = ρж·g·Vт", vars: ["Fₐ", "ρж", "g", "Vт"] },
-    { name: "II закон Ньютона", eq: "F = m·a", vars: ["F", "m", "a"] },
-    { name: "Закон Гука", eq: "Fy = -k·x", vars: ["Fy", "k", "x"] },
-    { name: "Кинетическая энергия", eq: "Ek = m·υ²/2", vars: ["Ek", "m", "υ"] },
-    { name: "Работа", eq: "A = F·S·cosα", vars: ["A", "F", "S", "cosα"] },
-    { name: "Мощность", eq: "N = A/t", vars: ["N", "A", "t"] },
-    { name: "Закон Ома", eq: "I = U/R", vars: ["I", "U", "R"] }
+    // ==================== МЕХАНИКА ====================
+    { name: "Давление", eq: "P = F/S", vars: ["P", "F", "S"], category: "Механика" },
+    { name: "Плотность", eq: "ρ = m/V", vars: ["ρ", "m", "V"], category: "Механика" },
+    { name: "Давление жидкости", eq: "P = ρ·g·h", vars: ["P", "ρ", "g", "h"], category: "Механика" },
+    { name: "Сила тяжести", eq: "Fт = m·g", vars: ["Fт", "m", "g"], category: "Механика" },
+    { name: "Архимедова сила", eq: "Fₐ = ρж·g·Vт", vars: ["Fₐ", "ρж", "g", "Vт"], category: "Механика" },
+    { name: "II закон Ньютона", eq: "F = m·a", vars: ["F", "m", "a"], category: "Механика" },
+    { name: "Закон Гука", eq: "Fy = -k·x", vars: ["Fy", "k", "x"], category: "Механика" },
+    { name: "Кинетическая энергия", eq: "Ek = m·υ²/2", vars: ["Ek", "m", "υ"], category: "Механика" },
+    { name: "Работа", eq: "A = F·S·cosα", vars: ["A", "F", "S", "cosα"], category: "Механика" },
+    { name: "Мощность", eq: "N = A/t", vars: ["N", "A", "t"], category: "Механика" },
+    { name: "Координата при равноускоренном движении", eq: "X = X0 + υ0·t + (a·t²)/2", vars: ["X", "X0", "υ0", "t", "a"], category: "Механика" },
+    { name: "Перемещение при равноускоренном движении (без времени)", eq: "S = (υ2² - υ0²)/(2·a)", vars: ["S", "υ2", "υ0", "a"], category: "Механика" },
+    { name: "Перемещение при равноускоренном движении (средняя скорость)", eq: "S = (υ + υ0)·t/2", vars: ["S", "υ", "υ0", "t"], category: "Механика" },
+    { name: "Уравнение скорости при равноускоренном движении", eq: "υ = υ0 + a·t", vars: ["υ", "υ0", "a", "t"], category: "Механика" },
+    { name: "Ускорение", eq: "a = (υ - υ0)/t", vars: ["a", "υ", "υ0", "t"], category: "Механика" },
+    { name: "Скорость при движении по окружности", eq: "υ = 2·Math.PI·R/T", vars: ["υ", "R", "T"], category: "Механика" },
+    { name: "Центростремительное ускорение", eq: "a = υ²/R", vars: ["a", "υ", "R"], category: "Механика" },
+    { name: "Частота через период", eq: "ν = 1/T", vars: ["ν", "T"], category: "Механика" },
+    { name: "Частота через циклическую частоту", eq: "ν = ω/(2·Math.PI)", vars: ["ν", "ω"], category: "Механика" },
+    { name: "Циклическая частота через частоту", eq: "ω = 2·Math.PI·ν", vars: ["ω", "ν"], category: "Механика" },
+    { name: "Закон Всемирного тяготения", eq: "F = G·M·m/R²", vars: ["F", "G", "M", "m", "R"], category: "Механика" },
+    { name: "Вес тела при движении вверх с ускорением", eq: "P = m·(g + a)", vars: ["P", "m", "g", "a"], category: "Механика" },
+    { name: "Вес тела при движении вниз с ускорением", eq: "P = m·(g - a)", vars: ["P", "m", "g", "a"], category: "Механика" },
+    { name: "Сила трения", eq: "Fтр = μ·N", vars: ["Fтр", "μ", "N"], category: "Механика" },
+    { name: "Импульс тела", eq: "p = m·υ", vars: ["p", "m", "υ"], category: "Механика" },
+    { name: "Импульс силы", eq: "Δp = F·t", vars: ["Δp", "F", "t"], category: "Механика" },
+    { name: "Момент силы", eq: "M = F·ℓ", vars: ["M", "F", "ℓ"], category: "Механика" },
+    { name: "Потенциальная энергия тела, поднятого над землей", eq: "Eп = m·g·h", vars: ["Eп", "m", "g", "h"], category: "Механика" },
+    { name: "Потенциальная энергия упруго деформированного тела", eq: "Eп = k·x²/2", vars: ["Eп", "k", "x"], category: "Механика" },
+    { name: "Мощность через силу и скорость", eq: "N = F·υ", vars: ["N", "F", "υ"], category: "Механика" },
+    { name: "Коэффициент полезного действия", eq: "η = Aп/Aз", vars: ["η", "Aп", "Aз"], category: "Механика" },
+
+    // ==================== МОЛЕКУЛЯРНАЯ ФИЗИКА И ТЕРМОДИНАМИКА ====================
+    { name: "Количество вещества", eq: "ν = N/Na", vars: ["ν", "N", "Na"], category: "Молекулярная физика" },
+    { name: "Молярная масса", eq: "M = m/ν", vars: ["M", "m", "ν"], category: "Молекулярная физика" },
+    { name: "Средняя кинетическая энергия молекул одноатомного газа", eq: "Ek = (3/2)·k·T", vars: ["Ek", "k", "T"], category: "Молекулярная физика" },
+    { name: "Давление газа через концентрацию и температуру", eq: "P = n·k·T", vars: ["P", "n", "k", "T"], category: "Молекулярная физика" },
+    { name: "Давление газа через концентрацию, массу молекулы и скорость", eq: "P = (1/3)·n·m0·υ²", vars: ["P", "n", "m0", "υ"], category: "Молекулярная физика" },
+    { name: "Закон Гей-Люссака (изобарный процесс)", eq: "V2 = V1·T2/T1", vars: ["V2", "V1", "T2", "T1"], category: "Молекулярная физика" },
+    { name: "Закон Шарля (изохорный процесс)", eq: "P2 = P1·T2/T1", vars: ["P2", "P1", "T2", "T1"], category: "Молекулярная физика" },
+    { name: "Относительная влажность", eq: "φ = P/P0", vars: ["φ", "P", "P0"], category: "Молекулярная физика" },
+    { name: "Внутренняя энергия идеального одноатомного газа", eq: "U = (3/2)·(M/µ)·R·T", vars: ["U", "M", "µ", "R", "T"], category: "Молекулярная физика" },
+    { name: "Работа газа", eq: "A = P·ΔV", vars: ["A", "P", "ΔV"], category: "Молекулярная физика" },
+    { name: "Закон Бойля-Мариотта (изотермический процесс)", eq: "P2 = P1·V1/V2", vars: ["P2", "P1", "V1", "V2"], category: "Молекулярная физика" },
+    { name: "Количество теплоты при нагревании", eq: "Q = C·m·(T2 - T1)", vars: ["Q", "C", "m", "T2", "T1"], category: "Молекулярная физика" },
+    { name: "Количество теплоты при плавлении", eq: "Q = λ·m", vars: ["Q", "λ", "m"], category: "Молекулярная физика" },
+    { name: "Количество теплоты при парообразовании", eq: "Q = L·m", vars: ["Q", "L", "m"], category: "Молекулярная физика" },
+    { name: "Количество теплоты при сгорании топлива", eq: "Q = q·m", vars: ["Q", "q", "m"], category: "Молекулярная физика" },
+    { name: "Уравнение состояния идеального газа", eq: "P·V = (m/M)·R·T", vars: ["P", "V", "m", "M", "R", "T"], category: "Молекулярная физика" },
+    { name: "Первый закон термодинамики", eq: "ΔU = A + Q", vars: ["ΔU", "A", "Q"], category: "Молекулярная физика" },
+    { name: "КПД тепловых двигателей", eq: "η = (Q1 - Q2)/Q1", vars: ["η", "Q1", "Q2"], category: "Молекулярная физика" },
+    { name: "КПД идеального двигателя (цикл Карно)", eq: "η = (T1 - T2)/T1", vars: ["η", "T1", "T2"], category: "Молекулярная физика" },
+
+    // ==================== ЭЛЕКТРОДИНАМИКА ====================
+    { name: "Закон Ома", eq: "I = U/R", vars: ["I", "U", "R"], category: "Электродинамика" },
+    { name: "Закон Кулона", eq: "F = k·q1·q2/R²", vars: ["F", "k", "q1", "q2", "R"], category: "Электродинамика" },
+    { name: "Напряженность электрического поля", eq: "E = F/q", vars: ["E", "F", "q"], category: "Электродинамика" },
+    { name: "Напряженность поля точечного заряда", eq: "E = k·q/R²", vars: ["E", "k", "q", "R"], category: "Электродинамика" },
+    { name: "Поверхностная плотность зарядов", eq: "σ = q/S", vars: ["σ", "q", "S"], category: "Электродинамика" },
+    { name: "Напряженность поля бесконечной плоскости", eq: "E = 2·Math.PI·k·σ", vars: ["E", "k", "σ"], category: "Электродинамика" },
+    { name: "Диэлектрическая проницаемость", eq: "ε = E0/E", vars: ["ε", "E0", "E"], category: "Электродинамика" },
+    { name: "Потенциальная энергия взаимодействия зарядов", eq: "W = k·q1·q2/R", vars: ["W", "k", "q1", "q2", "R"], category: "Электродинамика" },
+    { name: "Потенциал", eq: "φ = W/q", vars: ["φ", "W", "q"], category: "Электродинамика" },
+    { name: "Потенциал точечного заряда", eq: "φ = k·q/R", vars: ["φ", "k", "q", "R"], category: "Электродинамика" },
+    { name: "Напряжение", eq: "U = A/q", vars: ["U", "A", "q"], category: "Электродинамика" },
+    { name: "Для однородного электрического поля", eq: "U = E·d", vars: ["U", "E", "d"], category: "Электродинамика" },
+    { name: "Электроемкость", eq: "C = q/U", vars: ["C", "q", "U"], category: "Электродинамика" },
+    { name: "Электроемкость плоского конденсатора", eq: "C = S·ε·ε0/d", vars: ["C", "S", "ε", "ε0", "d"], category: "Электродинамика" },
+    { name: "Энергия заряженного конденсатора", eq: "W = C·U²/2", vars: ["W", "C", "U"], category: "Электродинамика" },
+    { name: "Сила тока", eq: "I = q/t", vars: ["I", "q", "t"], category: "Электродинамика" },
+    { name: "Сопротивление проводника", eq: "R = ρ·ℓ/S", vars: ["R", "ρ", "ℓ", "S"], category: "Электродинамика" },
+    { name: "Общее сопротивление при последовательном соединении", eq: "R = R1 + R2", vars: ["R", "R1", "R2"], category: "Электродинамика" },
+    { name: "Общее напряжение при последовательном соединении", eq: "U = U1 + U2", vars: ["U", "U1", "U2"], category: "Электродинамика" },
+    { name: "Сила тока при последовательном соединении", eq: "I1 = I2", vars: ["I1", "I2"], category: "Электродинамика" },
+    { name: "Общее сопротивление при параллельном соединении", eq: "R = 1/(1/R1 + 1/R2)", vars: ["R", "R1", "R2"], category: "Электродинамика" },
+    { name: "Напряжение при параллельном соединении", eq: "U1 = U2", vars: ["U1", "U2"], category: "Электродинамика" },
+    { name: "Сила тока при параллельном соединении", eq: "I = I1 + I2", vars: ["I", "I1", "I2"], category: "Электродинамика" },
+    { name: "Мощность электрического тока", eq: "P = I·U", vars: ["P", "I", "U"], category: "Электродинамика" },
+    { name: "Закон Джоуля-Ленца", eq: "Q = I²·R·t", vars: ["Q", "I", "R", "t"], category: "Электродинамика" },
+    { name: "Закон Ома для полной цепи", eq: "I = ε/(R + r)", vars: ["I", "ε", "R", "r"], category: "Электродинамика" },
+    { name: "Ток короткого замыкания", eq: "I = ε/r", vars: ["I", "ε", "r"], category: "Электродинамика" },
+    { name: "Вектор магнитной индукции", eq: "B = Fmax/(I·ℓ)", vars: ["B", "Fmax", "I", "ℓ"], category: "Электродинамика" },
+    { name: "Сила Ампера", eq: "Fa = I·B·ℓ·sinα", vars: ["Fa", "I", "B", "ℓ", "sinα"], category: "Электродинамика" },
+    { name: "Сила Лоренца", eq: "Fл = B·q·υ·sinα", vars: ["Fл", "B", "q", "υ", "sinα"], category: "Электродинамика" },
+    { name: "Магнитный поток", eq: "Ф = B·S·cosα", vars: ["Ф", "B", "S", "cosα"], category: "Электродинамика" },
+    { name: "Магнитный поток через индуктивность", eq: "Ф = L·I", vars: ["Ф", "L", "I"], category: "Электродинамика" },
+    { name: "Закон электромагнитной индукции", eq: "Ei = ΔФ/Δt", vars: ["Ei", "ΔФ", "Δt"], category: "Электродинамика" },
+    { name: "ЭДС индукции в движущемся проводнике", eq: "Ei = B·ℓ·υ·sinα", vars: ["Ei", "B", "ℓ", "υ", "sinα"], category: "Электродинамика" },
+    { name: "ЭДС самоиндукции", eq: "Esi = -L·ΔI/Δt", vars: ["Esi", "L", "ΔI", "Δt"], category: "Электродинамика" },
+    { name: "Энергия магнитного поля катушки", eq: "Wм = L·I²/2", vars: ["Wм", "L", "I"], category: "Электродинамика" },
+
+    // ==================== КОЛЕБАНИЯ И ВОЛНЫ ====================
+    { name: "Период колебаний математического маятника", eq: "T = 2·Math.PI·Math.sqrt(ℓ/g)", vars: ["T", "ℓ", "g"], category: "Колебания и волны" },
+    { name: "Период колебаний пружинного маятника", eq: "T = 2·Math.PI·Math.sqrt(m/k)", vars: ["T", "m", "k"], category: "Колебания и волны" },
+    { name: "Уравнение гармонических колебаний", eq: "X = Xmax·Math.cos(ω·t)", vars: ["X", "Xmax", "ω", "t"], category: "Колебания и волны" },
+    { name: "Связь длины волны, скорости и периода", eq: "λ = υ·T", vars: ["λ", "υ", "T"], category: "Колебания и волны" },
+    { name: "Период колебаний колебательного контура", eq: "T = 2·Math.PI·Math.sqrt(L·C)", vars: ["T", "L", "C"], category: "Колебания и волны" },
+    { name: "Индуктивное сопротивление", eq: "XL = 2·Math.PI·L·ν", vars: ["XL", "L", "ν"], category: "Колебания и волны" },
+    { name: "Емкостное сопротивление", eq: "Xc = 1/(2·Math.PI·ν·C)", vars: ["Xc", "ν", "C"], category: "Колебания и волны" },
+    { name: "Действующее значение силы тока", eq: "Iд = Imax/Math.sqrt(2)", vars: ["Iд", "Imax"], category: "Колебания и волны" },
+    { name: "Действующее значение напряжения", eq: "Uд = Umax/Math.sqrt(2)", vars: ["Uд", "Umax"], category: "Колебания и волны" },
+    { name: "Полное сопротивление", eq: "Z = Math.sqrt((Xc - XL)² + R²)", vars: ["Z", "Xc", "XL", "R"], category: "Колебания и волны" },
+
+    // ==================== ОПТИКА ====================
+    { name: "Закон преломления света", eq: "n21 = n2/n1", vars: ["n21", "n2", "n1"], category: "Оптика" },
+    { name: "Показатель преломления", eq: "n21 = sinα/sinγ", vars: ["n21", "sinα", "sinγ"], category: "Оптика" },
+    { name: "Формула тонкой линзы", eq: "1/F = 1/d + 1/f", vars: ["F", "d", "f"], category: "Оптика" },
+    { name: "Оптическая сила линзы", eq: "D = 1/F", vars: ["D", "F"], category: "Оптика" },
+    { name: "Максимум интерференции", eq: "Δd = k·λ", vars: ["Δd", "k", "λ"], category: "Оптика" },
+    { name: "Минимум интерференции", eq: "Δd = (2k+1)·λ/2", vars: ["Δd", "k", "λ"], category: "Оптика" },
+    { name: "Дифракционная решетка", eq: "d·sinφ = k·λ", vars: ["d", "sinφ", "k", "λ"], category: "Оптика" },
+
+    // ==================== КВАНТОВАЯ ФИЗИКА ====================
+    { name: "Формула Эйнштейна для фотоэффекта", eq: "h·ν = Aвых + Ek", vars: ["h", "ν", "Aвых", "Ek"], category: "Квантовая физика" },
+    { name: "Красная граница фотоэффекта", eq: "νк = Aвых/h", vars: ["νк", "Aвых", "h"], category: "Квантовая физика" },
+    { name: "Импульс фотона (через длину волны)", eq: "P = h/λ", vars: ["P", "h", "λ"], category: "Квантовая физика" },
+    { name: "Импульс фотона (через энергию)", eq: "P = E/c", vars: ["P", "E", "c"], category: "Квантовая физика" },
+    { name: "Закон радиоактивного распада", eq: "N = N0·Math.pow(2, -t/T)", vars: ["N", "N0", "t", "T"], category: "Квантовая физика" },
+    { name: "Энергия связи атомных ядер", eq: "Eсв = (Z·mp + N·mn - Mя)·c²", vars: ["Eсв", "Z", "mp", "N", "mn", "Mя", "c"], category: "Квантовая физика" },
+
+    // ==================== СПЕЦИАЛЬНАЯ ТЕОРИЯ ОТНОСИТЕЛЬНОСТИ ====================
+    { name: "Релятивистское замедление времени", eq: "t = t1/Math.sqrt(1 - υ²/c²)", vars: ["t", "t1", "υ", "c"], category: "СТО" },
+    { name: "Релятивистское сокращение длины", eq: "ℓ = ℓ0·Math.sqrt(1 - υ²/c²)", vars: ["ℓ", "ℓ0", "υ", "c"], category: "СТО" },
+    { name: "Релятивистское сложение скоростей", eq: "υ2 = (υ1 + υ)/(1 + υ1·υ/c²)", vars: ["υ2", "υ1", "υ", "c"], category: "СТО" },
+    { name: "Эквивалентность массы и энергии", eq: "E = m·c²", vars: ["E", "m", "c"], category: "СТО" }
 ];
-const formulaContainer = document.getElementById('formulaList');
+
+// Отрисовка формул с группировкой
+// Группировка формул по категориям
+const groupedFormulas = {};
 formulasLibrary.forEach(f => {
-    const item = document.createElement('div');
-    item.className = 'formula-item';
-    item.setAttribute('draggable', 'true');
-    item.setAttribute('data-eq', f.eq);
-    item.setAttribute('data-name', f.name);
-    item.setAttribute('data-vars', JSON.stringify(f.vars));
-    item.innerText = f.eq;
-    item.title = f.name;
-    formulaContainer.appendChild(item);
+    if (!groupedFormulas[f.category]) groupedFormulas[f.category] = [];
+    groupedFormulas[f.category].push(f);
 });
+
+// Порядок категорий (можно задать вручную или взять из ключей)
+const categoryOrder = [
+    "Механика",
+    "Молекулярная физика",
+    "Электродинамика",
+    "Колебания и волны",
+    "Оптика",
+    "Квантовая физика",
+    "СТО"
+];
+
+// Получаем контейнеры
+const tabsContainer = document.getElementById('formulaTabs');
+const contentContainer = document.getElementById('formulaTabContent');
+
+// Очищаем
+tabsContainer.innerHTML = '';
+contentContainer.innerHTML = '';
+
+// Функция создания вкладки
+function createTab(category, isActive = false) {
+    const tabBtn = document.createElement('button');
+    tabBtn.className = 'formula-tab' + (isActive ? ' active' : '');
+    tabBtn.textContent = category;
+    tabBtn.dataset.category = category;
+    tabBtn.addEventListener('click', () => switchTab(category));
+    return tabBtn;
+}
+
+// Функция создания контента вкладки
+function createTabContent(category) {
+    const formulas = groupedFormulas[category] || [];
+    const contentDiv = document.createElement('div');
+    contentDiv.className = 'formula-tab-pane';
+    contentDiv.dataset.category = category;
+
+    formulas.forEach(f => {
+        const item = document.createElement('div');
+        item.className = 'formula-item';
+        item.setAttribute('draggable', 'true');
+        item.setAttribute('data-eq', f.eq);
+        item.setAttribute('data-name', f.name);
+        item.setAttribute('data-vars', JSON.stringify(f.vars));
+        item.innerText = f.eq;
+        item.title = f.name;
+        contentDiv.appendChild(item);
+    });
+
+    return contentDiv;
+}
+
+// Переключение вкладки
+function switchTab(category) {
+    // Обновляем активный класс у кнопок
+    document.querySelectorAll('.formula-tab').forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.dataset.category === category) {
+            btn.classList.add('active');
+        }
+    });
+    // Показываем нужный контент
+    document.querySelectorAll('.formula-tab-pane').forEach(pane => {
+        pane.style.display = 'none';
+        if (pane.dataset.category === category) {
+            pane.style.display = 'block';
+        }
+    });
+}
+
+// Строим вкладки и содержимое
+categoryOrder.forEach((cat, idx) => {
+    const isActive = idx === 0;
+    const tabBtn = createTab(cat, isActive);
+    const tabPane = createTabContent(cat);
+    tabsContainer.appendChild(tabBtn);
+    contentContainer.appendChild(tabPane);
+    if (!isActive) tabPane.style.display = 'none';
+});
+
+// Если есть категории, не вошедшие в order, добавим их в конец
+for (const cat in groupedFormulas) {
+    if (!categoryOrder.includes(cat)) {
+        const tabBtn = createTab(cat, false);
+        const tabPane = createTabContent(cat);
+        tabsContainer.appendChild(tabBtn);
+        contentContainer.appendChild(tabPane);
+        tabPane.style.display = 'none';
+    }
+}
 
 // ---------------------- Глобальное состояние ----------------------
 let rectangles = new Map();

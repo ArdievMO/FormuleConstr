@@ -45,22 +45,85 @@
         gap: 10px;
     }
 
-    .formula-item {
-        background: #f1f5f9;
-        border: 1px solid #cbd5e1;
-        border-radius: 20px;
-        padding: 12px 14px;
-        font-family: 'Courier New', monospace;
-        font-size: 0.9rem;
-        cursor: grab;
-        transition: 0.2s;
-        text-align: center;
+    .formula-group {
+        margin-bottom: 1.5rem;
     }
 
+    .formula-group-header {
+        font-weight: bold;
+        font-size: 1.1rem;
+        background: #2c3e50;
+        color: white;
+        padding: 0.3rem 0.5rem;
+        border-radius: 4px;
+        margin-bottom: 0.5rem;
+    }
+
+    .formula-item {
+        background: #f1f5f9;
+        margin: 0.3rem 0;
+        padding: 0.3rem;
+        border-radius: 4px;
+        cursor: grab;
+        transition: background 0.2s;
+    }
+
+        .formula-item:active {
+            cursor: grabbing;
+        }
+
         .formula-item:hover {
-            background: #e6edf8;
-            border-color: #3b82f6;
-            transform: translateY(-2px);
+            background: #e2e8f0;
+        }
+
+    .formula-sidebar {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        overflow-y: auto;
+    }
+
+    .formula-tabs {
+        display: flex;
+        flex-wrap: wrap;
+        background: #1e293b;
+        border-bottom: 1px solid #334155;
+    }
+
+    .formula-tab {
+        background: transparent;
+        border: none;
+        color: #94a3b8;
+        padding: 8px 16px;
+        cursor: pointer;
+        font-size: 0.9rem;
+        transition: all 0.2s;
+    }
+
+        .formula-tab:hover {
+            background: #334155;
+            color: #f1f5f9;
+        }
+
+        .formula-tab.active {
+            background: #0f172a;
+            color: #f97316;
+            border-bottom: 2px solid #f97316;
+        }
+
+    .formula-tab-content {
+        flex: 1;
+        overflow-y: auto;
+        padding: 8px;
+        background: #0f172a;
+    }
+
+    .formula-tab-pane {
+        display: none;
+    }
+
+        .formula-tab-pane:first-child {
+            display: block;
         }
 
     .drag-hint {
