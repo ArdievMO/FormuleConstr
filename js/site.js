@@ -155,7 +155,12 @@ const contentContainer = document.getElementById('formulaTabContent');
 tabsContainer.innerHTML = '';
 contentContainer.innerHTML = '';
 
-// Функция создания вкладки
+/**
+ * Создаёт кнопку-вкладку для категории формул.
+ * @param {string} category - Название категории.
+ * @param {boolean} isActive - Должна ли вкладка быть активной по умолчанию.
+ * @returns {HTMLButtonElement} Элемент кнопки вкладки.
+ */
 function createTab(category, isActive = false) {
     const tabBtn = document.createElement('button');
     tabBtn.className = 'formula-tab' + (isActive ? ' active' : '');
@@ -165,7 +170,11 @@ function createTab(category, isActive = false) {
     return tabBtn;
 }
 
-// Функция создания контента вкладки
+/**
+ * Создаёт контент (панель с формулами) для заданной категории.
+ * @param {string} category - Название категории.
+ * @returns {HTMLDivElement} Контейнер с перетаскиваемыми элементами формул.
+ */
 function createTabContent(category) {
     const formulas = groupedFormulas[category] || [];
     const contentDiv = document.createElement('div');
@@ -187,7 +196,10 @@ function createTabContent(category) {
     return contentDiv;
 }
 
-// Переключение вкладки
+/**
+ * Переключает активную вкладку и показывает соответствующий контент.
+ * @param {string} category - Категория, на которую нужно переключиться.
+ */
 function switchTab(category) {
     // Обновляем активный класс у кнопок
     document.querySelectorAll('.formula-tab').forEach(btn => {
@@ -227,11 +239,11 @@ for (const cat in groupedFormulas) {
 }
 
 // ---------------------- Глобальное состояние ----------------------
-let rectangles = new Map();
-let paramConnections = [];
-let nextRectId = 1000;
-let connectModeActive = false;
-let pendingSource = null;
+let rectangles = new Map();                 // Хранилище блоков формул по id
+let paramConnections = [];                  // Список связей между параметрами
+let nextRectId = 1000;                      // Счётчик для генерации id новых блоков
+let connectModeActive = false;              // Активен ли режим соединения
+let pendingSource = null;                   // Временно выбранный источник соединения { rectId, param, isOutput }
 
 const graphArea = document.getElementById('graphArea');
 const rectLayer = document.getElementById('rectLayer');
@@ -243,12 +255,23 @@ const modeStatusSpan = document.getElementById('modeStatus');
 const paramConnListDiv = document.getElementById('paramConnList');
 const clearAllParamsConnBtn = document.getElementById('clearAllParamsConn');
 
+/**
+ * Вычисляет относительные координаты события внутри контейнера.
+ * @param {MouseEvent} e - Событие мыши.
+ * @param {HTMLElement} container - Контейнер, относительно которого считаются координаты.
+ * @returns {{x: number, y: number}} Объект с координатами x, y.
+ */
 function getRelativeCoords(e, container) {
     const rect = container.getBoundingClientRect();
     return { x: e.clientX - rect.left, y: e.clientY - rect.top };
 }
 
 // ---------- Отрисовка линий ----------
+
+/**
+ * Перерисовывает все линии связей между параметрами.
+ * Учитывает текущие размеры graphArea и положение портов.
+ */
 function redrawParamLines() {
     svg.innerHTML = '';
     const containerRect = graphArea.getBoundingClientRect();
@@ -273,6 +296,7 @@ function redrawParamLines() {
         line.setAttribute("marker-end", "url(#arrowParam)");
         svg.appendChild(line);
     }
+    // Добавляем маркер-стрелку, если ещё не добавлен
     if (!svg.querySelector('defs')) {
         const defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
         const marker = document.createElementNS("http://www.w3.org/2000/svg", "marker");
@@ -291,6 +315,13 @@ function redrawParamLines() {
     }
 }
 
+/**
+ * Возвращает координаты центра порта (входа или выхода) для заданного параметра.
+ * @param {Object} rect - Объект данных блока.
+ * @param {string} paramName - Имя параметра.
+ * @param {boolean} isOutput - Является ли порт выходным (true) или входным (false).
+ * @returns {{x: number, y: number}|null} Координаты порта или null, если не найден.
+ */
 function getPortPosition(rect, paramName, isOutput) {
     const rectEl = rect.element;
     if (!rectEl) return null;
@@ -302,7 +333,7 @@ function getPortPosition(rect, paramName, isOutput) {
         const rows = rectEl.querySelectorAll('.param-row');
         for (let row of rows) {
             const nameSpan = row.querySelector('.param-name');
-            if (nameSpan && nameSpan.innerText === paramName) {
+            if (nameSpan?.innerText === paramName) {
                 targetEl = row.querySelector('.port');
                 break;
             }
@@ -315,6 +346,9 @@ function getPortPosition(rect, paramName, isOutput) {
     return { x: centerX, y: centerY };
 }
 
+/**
+ * Обновляет отображение списка связей параметров в интерфейсе.
+ */
 function updateParamConnectionsList() {
     if (paramConnections.length === 0) {
         paramConnListDiv.innerHTML = '<span style="color:#64748b;">Нет связей параметров</span>';
@@ -337,6 +371,10 @@ function updateParamConnectionsList() {
     });
 }
 
+/**
+ * Удаляет связь параметров по индексу и обновляет интерфейс.
+ * @param {number} index - Индекс связи в массиве paramConnections.
+ */
 function removeParamConnection(index) {
     const conn = paramConnections[index];
     if (!conn) return;
@@ -347,6 +385,11 @@ function removeParamConnection(index) {
     redrawParamLines();
 }
 
+/**
+ * Перестраивает список параметров в блоке на основе текущих связей и ручных значений.
+ * Вызывается при изменении целевого параметра или после добавления/удаления связей.
+ * @param {Object} rect - Объект данных блока.
+ */
 function rebuildParamsList(rect) {
     const container = rect.element.querySelector('.params-list');
     const newTarget = rect.targetVar;
@@ -376,6 +419,8 @@ function rebuildParamsList(rect) {
         }
     }
     container.innerHTML = newHtml;
+    
+    // Перепривязываем обработчики на порты
     container.querySelectorAll('.port').forEach(port => {
         port.addEventListener('click', (e) => {
             e.stopPropagation();
@@ -385,13 +430,15 @@ function rebuildParamsList(rect) {
             handlePortClick(rect.id, param, false);
         });
     });
+
+    // Восстанавливаем значения в инпутах и подписываемся на изменения
     for (let v of rect.vars) {
         if (v === rect.targetVar) continue;
         const row = findParamRow(rect.element, v);
         if (row && !paramConnections.some(c => c.targetRectId === rect.id && c.targetParam === v)) {
             const input = row.querySelector('input');
             if (input) {
-                input.value = rect.manualValues[v] !== undefined ? rect.manualValues[v] : '';
+                input.value = rect.manualValues[v] === undefined ? '' : rect.manualValues[v];
                 input.addEventListener('input', (e) => {
                     rect.manualValues[v] = e.target.value;
                 });
@@ -400,6 +447,12 @@ function rebuildParamsList(rect) {
     }
 }
 
+/**
+ * Находит строку параметра в DOM-элементе блока по имени параметра.
+ * @param {HTMLElement} rectEl - Корневой элемент блока.
+ * @param {string} paramName - Имя параметра.
+ * @returns {HTMLElement|null} Элемент строки или null.
+ */
 function findParamRow(rectEl, paramName) {
     const rows = rectEl.querySelectorAll('.param-row');
     for (let row of rows) {
@@ -409,6 +462,15 @@ function findParamRow(rectEl, paramName) {
     return null;
 }
 
+/**
+ * Добавляет новую связь от выходного параметра к входному.
+ * Проверяет корректность и уникальность связи.
+ * @param {number} sourceRectId - ID блока-источника.
+ * @param {string} sourceParam - Имя выходного параметра (целевая переменная блока).
+ * @param {number} targetRectId - ID блока-приёмника.
+ * @param {string} targetParam - Имя входного параметра.
+ * @returns {boolean} true, если связь успешно добавлена.
+ */
 function addParamConnection(sourceRectId, sourceParam, targetRectId, targetParam) {
     const srcRect = rectangles.get(sourceRectId);
     if (!srcRect || srcRect.targetVar !== sourceParam) {
@@ -432,6 +494,10 @@ function addParamConnection(sourceRectId, sourceParam, targetRectId, targetParam
     return true;
 }
 
+/**
+ * Вычисляет значения всех блоков, используя ручные вводы и связи.
+ * Выполняет итеративное решение до тех пор, пока есть изменения.
+ */
 function computeAll() {
     for (let rect of rectangles.values()) {
         rect.computedValue = null;
@@ -486,6 +552,7 @@ function computeAll() {
         }
         iter++;
     }
+    // Обновляем отображение связанных значений в блоках-приёмниках
     for (let rect of rectangles.values()) {
         for (let v of rect.vars) {
             if (v === rect.targetVar)
@@ -507,12 +574,27 @@ function computeAll() {
     }
 }
 
+/**
+ * Приводит выражение к виду, пригодному для eval: заменяет символы умножения и степени.
+ * @param {string} expr - Исходное выражение.
+ * @returns {string} Нормализованное выражение.
+ */
 function normalizeExpression(expr) {
     expr = expr.replace(/·/g, '*');
     expr = expr.replace(/²/g, '**2');
     return expr;
 }
 
+/**
+ * Вычисляет невязку уравнения для заданного значения целевой переменной.
+ * Используется в численном решении уравнения.
+ * @param {string} eq - Уравнение в виде "левая = правая".
+ * @param {number} x - Пробное значение целевой переменной.
+ * @param {string[]} vars - Список всех переменных.
+ * @param {Object} knownValues - Известные значения остальных переменных.
+ * @param {string} targetVar - Имя переменной, которую решаем.
+ * @returns {number} Значение невязки (левая - правая).
+ */
 function residual(eq, x, vars, knownValues, targetVar) {
     const env = {};
     let [left, right] = eq.split('=').map(s => s.trim());
@@ -541,10 +623,18 @@ function residual(eq, x, vars, knownValues, targetVar) {
     }
 }
 
+/**
+ * Решает уравнение относительно заданной переменной методом бисекции.
+ * @param {string} eq - Уравнение.
+ * @param {string[]} vars - Список переменных.
+ * @param {Object} knownValues - Известные значения.
+ * @param {string} targetVar - Искомая переменная.
+ * @returns {number|null} Решение или null, если не удалось найти.
+ */
 function solveEquation(eq, vars, knownValues, targetVar) {
     let a = -1e6, b = 1e6;
     let fa = residual(eq, a, vars, knownValues, targetVar), fb = residual(eq, b, vars, knownValues, targetVar);
-    if (isNaN(fa) || isNaN(fb))
+    if (Number.isNaN(fa) || Number.isNaN(fb))
         return null;
     if (fa * fb > 0) {
         for (let i = 0; i < 20; i++) {
@@ -563,7 +653,7 @@ function solveEquation(eq, vars, knownValues, targetVar) {
         const fm = residual(eq, mid, vars, knownValues, targetVar);
         if (Math.abs(fm) < 1e-8)
             return mid;
-        if (isNaN(fm))
+        if (Number.isNaN(fm))
             return null;
         if (fa * fm < 0) {
             b = mid;
@@ -578,6 +668,16 @@ function solveEquation(eq, vars, knownValues, targetVar) {
 }
 
 // ---------- СОЗДАНИЕ БЛОКА ----------
+/**
+ * Создаёт новый блок формулы и добавляет его в область построения.
+ * @param {string} formulaEq - Строковое представление формулы (например, "F = m·a").
+ * @param {string} formulaName - Название формулы.
+ * @param {string[]} varsArray - Массив имён переменных, первая считается целевой по умолчанию.
+ * @param {number} left - Позиция по X (px) относительно graphArea.
+ * @param {number} top - Позиция по Y (px).
+ * @param {number|null} id - Опциональный ID блока; если не указан, генерируется автоматически.
+ * @returns {number} ID созданного блока.
+ */
 function createFormulaBlock(formulaEq, formulaName, varsArray, left, top, id = null) {
     const rectId = id !== null ? id : nextRectId++;
     const rectDiv = document.createElement('div');
@@ -637,6 +737,8 @@ function createFormulaBlock(formulaEq, formulaName, varsArray, left, top, id = n
     const deleteBtn = rectDiv.querySelector('.delete-card');
     deleteBtn.addEventListener('click', (e) => { e.stopPropagation(); deleteRectangle(rectId); });
 
+    
+    // Обработчики на входные порты
     rectDiv.querySelectorAll('.port').forEach(port => {
         port.addEventListener('click', (e) => {
             e.stopPropagation();
@@ -645,12 +747,15 @@ function createFormulaBlock(formulaEq, formulaName, varsArray, left, top, id = n
             handlePortClick(rectId, param, false);
         });
     });
+
     const targetPort = rectDiv.querySelector('.target-port');
     targetPort.addEventListener('click', (e) => {
         e.stopPropagation();
         if (!connectModeActive) return;
         handlePortClick(rectId, rectData.targetVar, true);
     });
+
+    // Переключение целевой переменной по клику на область вывода
     const targetArea = rectDiv.querySelector('.target-area');
     targetArea.addEventListener('click', (e) => {
         if (e.target === targetPort) return;
@@ -663,6 +768,7 @@ function createFormulaBlock(formulaEq, formulaName, varsArray, left, top, id = n
         rebuildParamsList(rectData);
     });
 
+    // Подписка на ручной ввод
     for (let v of varsArray) {
         if (v === targetVar) continue;
         const row = findParamRow(rectDiv, v);
@@ -680,6 +786,12 @@ function createFormulaBlock(formulaEq, formulaName, varsArray, left, top, id = n
     return rectId;
 }
 
+/**
+ * Обрабатывает клик по порту (входному или выходному) в режиме соединения.
+ * @param {number} rectId - ID блока.
+ * @param {string} param - Имя параметра.
+ * @param {boolean} isOutput - Является ли порт выходным.
+ */
 function handlePortClick(rectId, param, isOutput) {
     if (!connectModeActive) return;
     if (pendingSource === null) {
@@ -702,6 +814,10 @@ function handlePortClick(rectId, param, isOutput) {
     }
 }
 
+/**
+ * Удаляет блок формулы и все связанные с ним соединения.
+ * @param {number} rectId - ID удаляемого блока.
+ */
 function deleteRectangle(rectId) {
     const rect = rectangles.get(rectId);
     if (!rect) return;
@@ -713,7 +829,13 @@ function deleteRectangle(rectId) {
     redrawParamLines();
 }
 
-// ---------- ПЕРЕТАСКИВАНИЕ БЛОКОВ (исправленное: не мешает вводу) ----------
+// ---------- ПЕРЕТАСКИВАНИЕ БЛОКОВ ----------
+/**
+ * Делает элемент перетаскиваемым в пределах graphArea.
+ * Игнорирует клики по инпутам, портам и кнопкам.
+ * @param {HTMLElement} element - Элемент блока.
+ * @param {number} rectId - ID блока (не используется, но оставлен для совместимости).
+ */
 function makeDraggable(element, rectId) {
     let dragging = false, startX, startY, startLeft, startTop;
     element.addEventListener('mousedown', (e) => {
@@ -748,6 +870,11 @@ function makeDraggable(element, rectId) {
     function onMouseUp() { dragging = false; document.removeEventListener('mousemove', onMouseMove); document.removeEventListener('mouseup', onMouseUp); }
 }
 
+/**
+ * Экранирует HTML-спецсимволы для безопасного встраивания в DOM.
+ * @param {string} str - Исходная строка.
+ * @returns {string} Экранированная строка.
+ */
 function escapeHtml(str) {
 	return String(str).replace(/[&<>]/g, function (m) {
 		return { '&': '&amp;', '<': '&lt;', '>': '&gt;'
@@ -756,6 +883,11 @@ function escapeHtml(str) {
 }
 
 // Drag & Drop из библиотеки
+
+/**
+ * Настраивает перетаскивание элементов из библиотеки формул.
+ * При drop создаётся новый блок формулы.
+ */
 function setupDragDrop() {
     document.querySelectorAll('.formula-item').forEach(el => {
         el.addEventListener('dragstart', (e) => {
@@ -781,6 +913,9 @@ function setupDragDrop() {
     });
 }
 
+/**
+ * Инициализирует демонстрационные блоки при загрузке страницы.
+ */
 function initDemo() {
     createFormulaBlock("F = m·a", "II закон Ньютона", ["F", "m", "a"], 50, 80);
     createFormulaBlock("P = F/S", "Давление", ["P", "F", "S"], 360, 180);
@@ -788,6 +923,10 @@ function initDemo() {
     redrawParamLines();
 }
 
+/**
+ * Включает или выключает режим соединения параметров.
+ * @param {boolean} active - Новое состояние режима.
+ */
 function setConnectMode(active) {
     connectModeActive = active;
     if (!active) pendingSource = null;
@@ -795,6 +934,8 @@ function setConnectMode(active) {
     connModeBtn.innerText = active ? "Режим связи (ON)" : "Режим связи (OFF)";
     modeStatusSpan.innerText = active ? "Режим связи: выберите выходной порт" : "Режим: перемещение";
 }
+
+
 connModeBtn.addEventListener('click', () => setConnectMode(!connectModeActive));
 clearConnModeBtn.addEventListener('click', () => { pendingSource = null; setConnectMode(false); });
 computeBtn.addEventListener('click', computeAll);

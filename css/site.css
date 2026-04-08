@@ -380,6 +380,11 @@
         cursor: pointer;
     }
 
+        .target-port:hover {
+            transform: scale(1.2);
+            background: #c75300;
+        }
+
     .target-symbol {
         font-weight: bold;
         font-family: monospace;
