@@ -2,31 +2,31 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Конструктор формул</title>
     <link rel="stylesheet" href="css/site.css">
 </head>
 <body>
     <div class="app">
         <div class="formula-panel">
-            <h3>📚 Библиотека формул</h3>
+            <h3>Библиотека формул</h3>
             <div class="formula-sidebar">
                 <div id="formulaTabs" class="formula-tabs"></div>
                 <div id="formulaTabContent" class="formula-tab-content"></div>
             </div>
             <div class="drag-hint">
-                💡 Переместить формулы на поле → новый блок<br>
-                🔗 Режим связи: нажать на кружок (выход) → кружок (вход)<br>
-                🧮 Ввести числа → нажать ВЫЧИСЛИТЬ
+                Переместить формулы на поле → новый блок<br>
+                Режим связи: нажать на кружок (выход) → кружок (вход)<br>
+                Ввести числа → нажать ВЫЧИСЛИТЬ
             </div>
         </div>
 
         <div class="workspace">
             <div class="toolbar">
-                <button id="connModeBtn" class="btn btn-outline">🔌 Режим связи (OFF)</button>
-                <button id="clearConnModeBtn" class="btn">❌ Снять выделение</button>
-                <button id="computeBtn" class="btn btn-primary">🧮 ВЫЧИСЛИТЬ</button>
-                <span id="modeStatus" class="status">⚡ Режим: перемещение</span>
+                <button id="connModeBtn" class="btn btn-outline">Режим связи (OFF)</button>
+                <button id="clearConnModeBtn" class="btn">Снять выделение</button>
+                <button id="computeBtn" class="btn btn-primary">ВЫЧИСЛИТЬ</button>
+                <span id="modeStatus" class="status">Режим: перемещение</span>
             </div>
             <div id="graphArea" class="graph-area">
                 <div class="graph-inner">
@@ -38,8 +38,8 @@
             </div>
             <div class="connections-panel">
                 <div style="display: flex; justify-content: space-between;">
-                    <span>🔗 Активные связи параметров</span>
-                    <button id="clearAllParamsConn" style="background:none; border:none; color:#ef4444; cursor:pointer;">✖ удалить все</button>
+                    <span>Активные связи параметров</span>
+                    <button id="clearAllParamsConn" style="background:none; border:none; color:#ef4444; cursor:pointer;">удалить все</button>
                 </div>
                 <div id="paramConnList"></div>
             </div>

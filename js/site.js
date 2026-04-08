@@ -792,8 +792,8 @@ function setConnectMode(active) {
     connectModeActive = active;
     if (!active) pendingSource = null;
     connModeBtn.classList.toggle('active', active);
-    connModeBtn.innerText = active ? "🔌 Режим связи (ON)" : "🔌 Режим связи (OFF)";
-    modeStatusSpan.innerText = active ? "🔌 Режим связи: выберите выходной порт" : "⚡ Режим: перемещение";
+    connModeBtn.innerText = active ? "Режим связи (ON)" : "Режим связи (OFF)";
+    modeStatusSpan.innerText = active ? "Режим связи: выберите выходной порт" : "Режим: перемещение";
 }
 connModeBtn.addEventListener('click', () => setConnectMode(!connectModeActive));
 clearConnModeBtn.addEventListener('click', () => { pendingSource = null; setConnectMode(false); });
