@@ -1,5 +1,14 @@
 ﻿//--- БАЗА ФОРМУЛ ---
 const formulasLibrary = [
+    // ==================== Дополнительно ====================
+    { name: "Арифметический оператор", eq: "out = in + coeff", vars: ["out", "in", "coeff"], category: "Дополнительно" },
+    { name: "Арифметический оператор", eq: "out = in - coeff", vars: ["out", "in", "coeff"], category: "Дополнительно" },
+    { name: "Арифметический оператор", eq: "out = in · coeff", vars: ["out", "in", "coeff"], category: "Дополнительно" },
+    { name: "Арифметический оператор", eq: "out = in / coeff", vars: ["out", "in", "coeff"], category: "Дополнительно" },
+    { name: "Арифметический оператор", eq: "out = in²", vars: ["out", "in"], category: "Дополнительно" },
+    { name: "Арифметический оператор", eq: "out = Math.sqrt(in)", vars: ["out", "in"], category: "Дополнительно" },
+
+
     // ==================== МЕХАНИКА ====================
     { name: "Давление", eq: "P = F/S", vars: ["P", "F", "S"], category: "Механика" },
     { name: "Плотность", eq: "ρ = m/V", vars: ["ρ", "m", "V"], category: "Механика" },
@@ -144,7 +153,8 @@ const categoryOrder = [
     "Колебания и волны",
     "Оптика",
     "Квантовая физика",
-    "СТО"
+    "СТО",
+    "Дополнительно"
 ];
 
 // Получаем контейнеры
@@ -362,7 +372,7 @@ function updateParamConnectionsList() {
         const tgtRect = rectangles.get(conn.targetRectId);
         const srcName = srcRect ? `${srcRect.formulaName}:${conn.sourceParam}` : '?';
         const tgtName = tgtRect ? `${tgtRect.formulaName}:${conn.targetParam}` : '?';
-        html += `<div class="conn-badge">📡 ${srcName} → ${tgtName} <button data-idx="${idx}" class="removeParamConn">✖</button></div>`;
+        html += `<div class="conn-badge">${srcName} → ${tgtName} <button data-idx="${idx}" class="removeParamConn">✖</button></div>`;
     });
     paramConnListDiv.innerHTML = html;
     document.querySelectorAll('.removeParamConn').forEach(btn => {
@@ -495,10 +505,14 @@ function addParamConnection(sourceRectId, sourceParam, targetRectId, targetParam
         alert("Параметр уже связан!");
         return false;
     }
-    if (targetParam !== sourceParam) {
-        alert("Соединять можно только одинаковые параметры!");
+    if (sourceRectId === targetRectId) {
+        alert("Нельзя соединять выход блока с его же входом (зацикливание)!");
         return false;
     }
+    //if (targetParam !== sourceParam && targetParam !== 'in' && sourceParam !== 'out') {
+    //    alert("Соединять можно только одинаковые параметры!");
+    //    return false;
+    //}
     paramConnections.push({ sourceRectId, sourceParam, targetRectId, targetParam });
     rebuildParamsList(tgtRect);
     updateParamConnectionsList();
@@ -525,8 +539,54 @@ function computeAll() {
         for (let rect of rectangles.values()) {
             if (rect.computedValue !== null)
                 continue;
-            const inputValues = {};
+            
             let allInputsReady = true;
+            if (rect.isCustom) {
+                // Получаем значение in
+                let inVal = null;
+                const inConn = paramConnections.find(c => c.targetRectId === rect.id && c.targetParam === 'in');
+                if (inConn) {
+                    const srcRect = rectangles.get(inConn.sourceRectId);
+                    if (srcRect && srcRect.computedValue !== null) {
+                        inVal = srcRect.computedValue;
+                    } else {
+                        allInputsReady = false;
+                    }
+                } else {
+                    const manualIn = rect.manualValues.in;
+                    if (manualIn !== undefined && manualIn.trim() !== '' && !isNaN(Number.parseFloat(manualIn))) {
+                        inVal = Number.parseFloat(manualIn);
+                    } else {
+                        allInputsReady = false;
+                    }
+                }
+                // Получаем coeff (только ручной ввод)
+                let coeffVal = null;
+                const manualCoeff = rect.manualValues.coeff;
+                if (manualCoeff !== undefined && manualCoeff.trim() !== '' && !isNaN(Number.parseFloat(manualCoeff))) {
+                    coeffVal = Number.parseFloat(manualCoeff);
+                } else {
+                    allInputsReady = false;
+                }
+                if (allInputsReady && inVal !== null && coeffVal !== null) {
+                    let result = null;
+                    switch (rect.operation) {
+                        case '+': result = inVal + coeffVal; break;
+                        case '-': result = inVal - coeffVal; break;
+                        case '*': result = inVal * coeffVal; break;
+                        case '/': result = coeffVal !== 0 ? inVal / coeffVal : NaN; break;
+                    }
+                    if (result !== null && isFinite(result)) {
+                        rect.computedValue = result;
+                        const targetSpan = rect.element.querySelector('.target-value');
+                        if (targetSpan) targetSpan.innerText = result.toFixed(4);
+                        changed = true;
+                    }
+                }
+                continue;
+            }
+            const inputValues = {};
+            allInputsReady = true;
             for (let v of rect.vars) {
                 if (v === rect.targetVar)
                     continue;
@@ -680,6 +740,7 @@ function solveEquation(eq, vars, knownValues, targetVar) {
 }
 
 // ---------- СОЗДАНИЕ БЛОКА ----------
+
 /**
  * Создаёт новый блок формулы и добавляет его в область построения.
  * @param {string} formulaEq - Строковое представление формулы (например, "F = m·a").
@@ -826,6 +887,109 @@ function createFormulaBlock(formulaEq, formulaName, varsArray, left, top, id = n
 }
 
 /**
+ * Создаёт специальный блок «Арифметический оператор».
+ * @param {number} left - Позиция X.
+ * @param {number} top - Позиция Y.
+ * @param {number|null} id - ID блока (опционально).
+ * @param {string} operation - Операция: '+', '-', '*', '/'.
+ * @param {string|number} coeffValue - Начальное значение коэффициента.
+ * @returns {number} ID созданного блока.
+ */
+function createCustomBlock(left, top, id = null, operation = '+', coeffValue = '') {
+    const rectId = id === null ? nextRectId++ : id;
+    const rectDiv = document.createElement('div');
+    rectDiv.className = 'formula-card';
+    rectDiv.style.left = `${left}px`;
+    rectDiv.style.top = `${top}px`;
+    rectDiv.dataset.id = rectId;
+    rectDiv.title = 'Арифметический оператор';
+
+    // Создаём структуру блока
+    rectDiv.innerHTML = `
+        <div class="card-header">
+            <div class="formula-text">out = in <span id="opSelect-${rectId}">${operation}</span> coeff</div>
+            <div class="delete-card">✕</div>
+        </div>
+        <div class="params-list">
+            <div class="param-row">
+                <div class="port" data-param="in"></div>
+                <div class="param-name">in</div>
+                <div class="param-value">
+                    <input class="param-input" type="number" placeholder="число или связь" id="inInput-${rectId}">
+                </div>
+            </div>
+            <div class="param-row">
+                <div class="param-name" style="margin-left:26px;">coeff</div>
+                <div class="param-value">
+                    <input class="param-input" type="number" placeholder="коэффициент" id="coeffInput-${rectId}" value="${escapeHtml(String(coeffValue))}">
+                </div>
+            </div>
+        </div>
+        <div class="target-area" data-target-var="out">
+            <div class="target-output">
+                <div class="target-symbol">out</div>
+                <div class="target-value">?</div>
+            </div>
+            <div class="target-port"></div>
+        </div>
+    `;
+
+    rectLayer.appendChild(rectDiv);
+
+
+    // Данные блока
+    const rectData = {
+        id: rectId,
+        element: rectDiv,
+        isCustom: true,
+        formulaName: 'Арифметический оператор',
+        vars: ['out', 'in', 'coeff'],
+        targetVar: 'out',        // всегда out
+        manualValues: { in: '', coeff: String(coeffValue) },
+        operation: operation,
+        computedValue: null
+    };
+    rectangles.set(rectId, rectData);
+
+    // Поля ввода
+    const inInput = rectDiv.querySelector(`#inInput-${rectId}`);
+    const coeffInput = rectDiv.querySelector(`#coeffInput-${rectId}`);
+
+    inInput.addEventListener('input', (e) => {
+        rectData.manualValues.in = e.target.value;
+    });
+    coeffInput.addEventListener('input', (e) => {
+        rectData.manualValues.coeff = e.target.value;
+    });
+
+    // Восстановление значений, если уже есть (при загрузке)
+    if (rectData.manualValues.in) inInput.value = rectData.manualValues.in;
+    if (rectData.manualValues.coeff) coeffInput.value = rectData.manualValues.coeff;
+
+    // Порты
+    const inPort = rectDiv.querySelector('.port');
+    inPort.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (!connectModeActive) return;
+        handlePortClick(rectId, 'in', false);
+    });
+
+    const outPort = rectDiv.querySelector('.target-port');
+    outPort.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (!connectModeActive) return;
+        handlePortClick(rectId, 'out', true);
+    });
+
+    // Удаление
+    const deleteBtn = rectDiv.querySelector('.delete-card');
+    deleteBtn.addEventListener('click', (e) => { e.stopPropagation(); deleteRectangle(rectId); });
+
+    makeDraggable(rectDiv, rectId);
+    return rectId;
+}
+
+/**
  * Обрабатывает клик по порту (входному или выходному) в режиме соединения.
  * @param {number} rectId - ID блока.
  * @param {string} param - Имя параметра.
@@ -945,7 +1109,11 @@ function setupDragDrop() {
         let x = coords.x - 145, y = coords.y - 70;
         x = Math.max(10, Math.min(x, graphArea.clientWidth - 290));
         y = Math.max(10, Math.min(y, graphArea.clientHeight - 200));
-        createFormulaBlock(data.eq, data.name, data.vars, x, y);
+        if (data.name === "Арифметический оператор") {
+            createCustomBlock(x, y);
+        } else {
+            createFormulaBlock(data.eq, data.name, data.vars, x, y);
+        }
         redrawParamLines();
     });
 }
@@ -1039,16 +1207,21 @@ function serializeState() {
     const blocks = [];
     for (let rect of rectangles.values()) {
         const rectEl = rect.element;
-        blocks.push({
+        const blockData = {
             id: rect.id,
-            formulaEq: rect.formulaEq,
+            formulaEq: rect.formulaEq || (rect.isCustom ? 'out = in ? coeff' : ''),
             formulaName: rect.formulaName,
             vars: rect.vars,
-            left: parseFloat(rectEl.style.left),
-            top: parseFloat(rectEl.style.top),
+            left: Number.parseFloat(rectEl.style.left),
+            top: Number.parseFloat(rectEl.style.top),
             targetVar: rect.targetVar,
             manualValues: rect.manualValues
-        });
+        };
+        if (rect.isCustom) {
+            blockData.isCustom = true;
+            blockData.operation = rect.operation;
+        }
+        blocks.push(blockData);
     }
     return {
         version: "1.0",
@@ -1072,16 +1245,35 @@ function deserializeState(state) {
     
     // Сначала создаём все блоки (без связей, т.к. связи будут добавлены позже)
     for (let block of state.blocks) {
-        createFormulaBlock(
-            block.formulaEq,
-            block.formulaName,
-            block.vars,
-            block.left,
-            block.top,
-            block.id,
-            block.targetVar,
-            block.manualValues
-        );
+        if (block.isCustom) {
+            createCustomBlock(
+                block.left,
+                block.top,
+                block.id,
+                block.operation || '+',
+                block.manualValues?.coeff || ''
+            );
+            // Восстанавливаем ручное значение in, если оно есть (уже внутри createCustomBlock через manualValues)
+            const rect = rectangles.get(block.id);
+            if (rect && block.manualValues) {
+                rect.manualValues = { ...block.manualValues };
+                const inInput = rect.element.querySelector(`#inInput-${block.id}`);
+                if (inInput) inInput.value = rect.manualValues.in || '';
+                const coeffInput = rect.element.querySelector(`#coeffInput-${block.id}`);
+                if (coeffInput) coeffInput.value = rect.manualValues.coeff || '';
+            }
+        } else {
+            createFormulaBlock(
+                block.formulaEq,
+                block.formulaName,
+                block.vars,
+                block.left,
+                block.top,
+                block.id,
+                block.targetVar,
+                block.manualValues
+            );
+        }
     }
     
     // Восстанавливаем связи
