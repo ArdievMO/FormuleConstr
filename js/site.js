@@ -185,9 +185,9 @@ function createTabContent(category) {
         const item = document.createElement('div');
         item.className = 'formula-item';
         item.setAttribute('draggable', 'true');
-        item.setAttribute('data-eq', f.eq);
-        item.setAttribute('data-name', f.name);
-        item.setAttribute('data-vars', JSON.stringify(f.vars));
+        item.dataset.eq = f.eq;
+        item.dataset.name = f.name;
+        item.dataset.vars = JSON.stringify(f.vars);
         item.innerText = f.eq;
         item.title = f.name;
         contentDiv.appendChild(item);
@@ -248,8 +248,10 @@ let pendingSource = null;                   // Временно выбранны
 const graphArea = document.getElementById('graphArea');
 const rectLayer = document.getElementById('rectLayer');
 const svg = document.getElementById('linesSvg');
+const saveBtn = document.getElementById('saveBtn');
+const loadBtn = document.getElementById('loadBtn');
 const connModeBtn = document.getElementById('connModeBtn');
-const clearConnModeBtn = document.getElementById('clearConnModeBtn');
+const helpBtn = document.getElementById('helpBtn');
 const computeBtn = document.getElementById('computeBtn');
 const modeStatusSpan = document.getElementById('modeStatus');
 const paramConnListDiv = document.getElementById('paramConnList');
@@ -365,7 +367,7 @@ function updateParamConnectionsList() {
     paramConnListDiv.innerHTML = html;
     document.querySelectorAll('.removeParamConn').forEach(btn => {
         btn.addEventListener('click', (e) => {
-            const idx = parseInt(btn.dataset.idx);
+            const idx = Number.parseInt(btn.dataset.idx);
             removeParamConnection(idx);
         });
     });
@@ -385,6 +387,7 @@ function removeParamConnection(index) {
     redrawParamLines();
 }
 
+
 /**
  * Перестраивает список параметров в блоке на основе текущих связей и ручных значений.
  * Вызывается при изменении целевого параметра или после добавления/удаления связей.
@@ -395,16 +398,17 @@ function rebuildParamsList(rect) {
     const newTarget = rect.targetVar;
     let newHtml = '';
     for (let v of rect.vars) {
-        if (v === newTarget) continue;
+        if (v === newTarget)
+            continue;
         const hasConn = paramConnections.some(c => c.targetRectId === rect.id && c.targetParam === v);
-        const manualVal = rect.manualValues[v] !== undefined ? rect.manualValues[v] : '';
+        const manualVal = rect.manualValues[v] === undefined ? '' : rect.manualValues[v];
         if (hasConn) {
             newHtml += `
             <div class="param-row">
                 <div class="port" data-param="${v}"></div>
                 <div class="param-name">${v}</div>
                 <div class="param-value">
-                    <div class="param-output">🔗 связано</div>
+                    <div class="param-output">связано</div>
                 </div>
             </div>`;
         } else {
@@ -413,7 +417,7 @@ function rebuildParamsList(rect) {
                 <div class="port" data-param="${v}"></div>
                 <div class="param-name">${v}</div>
                 <div class="param-value">
-                    <input class="param-input" type="text" placeholder="число" value="${escapeHtml(manualVal)}">
+                    <input class="param-input" type="number" placeholder="число" value="${escapeHtml(manualVal)}">
                 </div>
             </div>`;
         }
@@ -426,7 +430,7 @@ function rebuildParamsList(rect) {
             e.stopPropagation();
             if (!connectModeActive)
                 return;
-            const param = port.getAttribute('data-param');
+            const param = port.dataset.param;
             handlePortClick(rect.id, param, false);
         });
     });
@@ -457,7 +461,7 @@ function findParamRow(rectEl, paramName) {
     const rows = rectEl.querySelectorAll('.param-row');
     for (let row of rows) {
         const nameSpan = row.querySelector('.param-name');
-        if (nameSpan && nameSpan.innerText === paramName) return row;
+        if (nameSpan?.innerText === paramName) return row;
     }
     return null;
 }
@@ -473,18 +477,26 @@ function findParamRow(rectEl, paramName) {
  */
 function addParamConnection(sourceRectId, sourceParam, targetRectId, targetParam) {
     const srcRect = rectangles.get(sourceRectId);
-    if (!srcRect || srcRect.targetVar !== sourceParam) {
-        alert("Источником может быть только вычисляемый параметр (оранжевый кружок)");
+    if (srcRect?.targetVar !== sourceParam) {
+        alert("Источником может быть только вычисляемый выходной параметр (оранжевый кружок)!");
         return false;
     }
     const tgtRect = rectangles.get(targetRectId);
     if (!tgtRect) return false;
     if (tgtRect.targetVar === targetParam) {
-        alert("Нельзя подключать вход к вычисляемому параметру цели");
+        alert("Нельзя подключать вход к вычисляемому параметру цели!");
         return false;
     }
-    if (paramConnections.some(c => c.sourceRectId === sourceRectId && c.sourceParam === sourceParam && c.targetRectId === targetRectId && c.targetParam === targetParam)) {
-        alert("Такая связь уже существует");
+    if (paramConnections.some(c => c.sourceRectId === sourceRectId && c.sourceParam === sourceParam)) {
+        alert("Параметр уже связан!");
+        return false;
+    }
+    if (paramConnections.some(c => c.targetRectId === targetRectId && c.targetParam === targetParam)) {
+        alert("Параметр уже связан!");
+        return false;
+    }
+    if (targetParam !== sourceParam) {
+        alert("Соединять можно только одинаковые параметры!");
         return false;
     }
     paramConnections.push({ sourceRectId, sourceParam, targetRectId, targetParam });
@@ -531,8 +543,8 @@ function computeAll() {
                 }
                 else {
                     const manualVal = rect.manualValues[v];
-                    if (manualVal !== undefined && manualVal.trim() !== '' && !isNaN(parseFloat(manualVal))) {
-                        inputValues[v] = parseFloat(manualVal);
+                    if (manualVal !== undefined && manualVal.trim() !== '' && !Number.isNaN(Number.parseFloat(manualVal))) {
+                        inputValues[v] = Number.parseFloat(manualVal);
                     }
                     else {
                         allInputsReady = false;
@@ -543,7 +555,7 @@ function computeAll() {
             if (!allInputsReady)
                 continue;
             const result = solveEquation(rect.formulaEq, rect.vars, inputValues, rect.targetVar);
-            if (result !== null && isFinite(result)) {
+            if (result !== null && Number.isFinite(result)) {
                 rect.computedValue = result;
                 const targetValueSpan = rect.element.querySelector('.target-value');
                 if (targetValueSpan) targetValueSpan.innerText = result.toFixed(4);
@@ -565,7 +577,7 @@ function computeAll() {
                     if (row) {
                         const valDiv = row.querySelector('.param-value');
                         if (valDiv) {
-                            valDiv.innerHTML = `<div class="param-output">🔗 = ${srcRect.computedValue.toFixed(4)}</div>`;
+                            valDiv.innerHTML = `<div class="param-output"> = ${srcRect.computedValue.toFixed(4)}</div>`;
                         }
                     }
                 }
@@ -580,8 +592,8 @@ function computeAll() {
  * @returns {string} Нормализованное выражение.
  */
 function normalizeExpression(expr) {
-    expr = expr.replace(/·/g, '*');
-    expr = expr.replace(/²/g, '**2');
+    expr = expr.replaceAll('·', '*');
+    expr = expr.replaceAll('²', '**2');
     return expr;
 }
 
@@ -611,15 +623,15 @@ function residual(eq, x, vars, knownValues, targetVar) {
             env[v] = knownValues[v];
     }
     for(let v of vars) {
-        if (env[v] === undefined || isNaN(env[v]))
-            return NaN;
+        if (env[v] === undefined || Number.isNaN(env[v]))
+            return Number.NaN;
     }
     try {
         const fn = new Function(...vars, `return ${exprStr};`);
         return fn(...vars.map(v => env[v]));
     }
     catch(e) {
-        return NaN;
+        return Number.NaN;
     }
 }
 
@@ -678,48 +690,69 @@ function solveEquation(eq, vars, knownValues, targetVar) {
  * @param {number|null} id - Опциональный ID блока; если не указан, генерируется автоматически.
  * @returns {number} ID созданного блока.
  */
-function createFormulaBlock(formulaEq, formulaName, varsArray, left, top, id = null) {
-    const rectId = id !== null ? id : nextRectId++;
+function createFormulaBlock(formulaEq, formulaName, varsArray, left, top, id = null, targetVarOverride = null, manualValuesOverride = null) {
+    const rectId = id === null ? nextRectId++ : id;
+    
+    // Определяем целевую переменную
+    let targetVar = targetVarOverride;
+    if (!targetVar || !varsArray.includes(targetVar)) {
+        targetVar = varsArray[0];
+    }
+    
+    // Ручные значения: если переданы, используем их, иначе создаём пустые
+    const manualValues = manualValuesOverride ? { ...manualValuesOverride } : {};
+    for (let v of varsArray) {
+        if (v !== targetVar && manualValues[v] === undefined) {
+            manualValues[v] = '';
+        }
+    }
+    
     const rectDiv = document.createElement('div');
     rectDiv.className = 'formula-card';
     rectDiv.style.left = `${left}px`;
     rectDiv.style.top = `${top}px`;
-    rectDiv.setAttribute('data-id', rectId);
+    rectDiv.dataset.id = rectId;
     rectDiv.title = formulaName;
-
-    const targetVar = varsArray[0];
-    const manualValues = {};
-    for (let v of varsArray) if (v !== targetVar) manualValues[v] = '';
-
+    
     let paramsHtml = '';
     for (let v of varsArray) {
         if (v === targetVar) continue;
-        paramsHtml += `
+        const hasConn = paramConnections.some(c => c.targetRectId === rectId && c.targetParam === v);
+        const manualVal = manualValues[v] === undefined ? '' : manualValues[v];
+        if (hasConn) {
+            paramsHtml += `
                 <div class="param-row">
                     <div class="port" data-param="${v}"></div>
                     <div class="param-name">${v}</div>
-                    <div class="param-value"><input class="param-input" type="text" placeholder="число" value="${escapeHtml(manualValues[v])}"></div>
-                </div>
-            `;
+                    <div class="param-value"><div class="param-output">связано</div></div>
+                </div>`;
+        } else {
+            paramsHtml += `
+                <div class="param-row">
+                    <div class="port" data-param="${v}"></div>
+                    <div class="param-name">${v}</div>
+                    <div class="param-value"><input class="param-input" type="number" placeholder="число" value="${escapeHtml(manualVal)}"></div>
+                </div>`;
+        }
     }
-
+    
     rectDiv.innerHTML = `
-            <div class="card-header">
-                <div class="formula-text">${escapeHtml(formulaEq)}</div>
-                <div class="delete-card">✕</div>
+        <div class="card-header">
+            <div class="formula-text">${escapeHtml(formulaEq)}</div>
+            <div class="delete-card">✕</div>
+        </div>
+        <div class="params-list" id="params-${rectId}">
+            ${paramsHtml}
+        </div>
+        <div class="target-area" data-target-var="${targetVar}">
+            <div class="target-output">
+                <div class="target-symbol">${targetVar}</div>
+                <div class="target-value">?</div>
             </div>
-            <div class="params-list" id="params-${rectId}">
-                ${paramsHtml}
-            </div>
-            <div class="target-area" data-target-var="${targetVar}">
-                <div class="target-output">
-                    <div class="target-symbol">${targetVar}</div>
-                    <div class="target-value">?</div>
-                </div>
-                <div class="target-port"></div>
-            </div>
-        `;
-
+            <div class="target-port"></div>
+        </div>
+    `;
+    
     rectLayer.appendChild(rectDiv);
     const rectData = {
         id: rectId,
@@ -733,31 +766,36 @@ function createFormulaBlock(formulaEq, formulaName, varsArray, left, top, id = n
         computedValue: null
     };
     rectangles.set(rectId, rectData);
-
+    
     const deleteBtn = rectDiv.querySelector('.delete-card');
     deleteBtn.addEventListener('click', (e) => { e.stopPropagation(); deleteRectangle(rectId); });
-
     
-    // Обработчики на входные порты
     rectDiv.querySelectorAll('.port').forEach(port => {
         port.addEventListener('click', (e) => {
             e.stopPropagation();
             if (!connectModeActive) return;
-            const param = port.getAttribute('data-param');
+            const param = port.dataset.param;
             handlePortClick(rectId, param, false);
         });
     });
-
+    
     const targetPort = rectDiv.querySelector('.target-port');
     targetPort.addEventListener('click', (e) => {
         e.stopPropagation();
         if (!connectModeActive) return;
         handlePortClick(rectId, rectData.targetVar, true);
     });
-
-    // Переключение целевой переменной по клику на область вывода
+    
     const targetArea = rectDiv.querySelector('.target-area');
     targetArea.addEventListener('click', (e) => {
+        if (paramConnections.some(c => c.sourceRectId === rectData.id)) {
+            alert("Смена параметров невозможна при наличии соединения!");
+            return false;
+        }
+        if(paramConnections.some(c => c.targetRectId === rectData.id)) {
+            alert("Смена параметров невозможна при наличии соединения!");
+            return false;
+        }
         if (e.target === targetPort) return;
         const idx = rectData.vars.indexOf(rectData.targetVar);
         const nextIdx = (idx + 1) % rectData.vars.length;
@@ -767,7 +805,7 @@ function createFormulaBlock(formulaEq, formulaName, varsArray, left, top, id = n
         if (symSpan) symSpan.innerText = newTarget;
         rebuildParamsList(rectData);
     });
-
+    
     // Подписка на ручной ввод
     for (let v of varsArray) {
         if (v === targetVar) continue;
@@ -775,13 +813,14 @@ function createFormulaBlock(formulaEq, formulaName, varsArray, left, top, id = n
         if (row) {
             const input = row.querySelector('input');
             if (input) {
+                input.value = manualValues[v] === undefined ? '' : manualValues[v];
                 input.addEventListener('input', (e) => {
                     rectData.manualValues[v] = e.target.value;
                 });
             }
         }
     }
-
+    
     makeDraggable(rectDiv, rectId);
     return rectId;
 }
@@ -800,17 +839,15 @@ function handlePortClick(rectId, param, isOutput) {
             return;
         }
         pendingSource = { rectId, param, isOutput };
-        modeStatusSpan.innerText = `🔌 Выбран источник: ${param}. Теперь выберите входной порт.`;
+        modeStatusSpan.innerText = `Выбран источник: ${param}. Теперь выберите входной порт.`;
+    } else if (pendingSource.isOutput && !isOutput) {
+        addParamConnection(pendingSource.rectId, pendingSource.param, rectId, param);
+        pendingSource = null;
+        modeStatusSpan.innerText = `Режим связи: выберите выходной порт`;
     } else {
-        if (pendingSource.isOutput && !isOutput) {
-            addParamConnection(pendingSource.rectId, pendingSource.param, rectId, param);
-            pendingSource = null;
-            modeStatusSpan.innerText = `🔌 Режим связи: выберите выходной порт`;
-        } else {
-            alert("Некорректное направление: нужно от выхода (оранжевый) ко входу (синий)");
-            pendingSource = null;
-            modeStatusSpan.innerText = `🔌 Режим связи: выберите выходной порт`;
-        }
+        alert("Некорректное направление: нужно от выхода (оранжевый) ко входу (синий)");
+        pendingSource = null;
+        modeStatusSpan.innerText = `Режим связи: выберите выходной порт`;
     }
 }
 
@@ -824,7 +861,7 @@ function deleteRectangle(rectId) {
     rect.element.remove();
     rectangles.delete(rectId);
     paramConnections = paramConnections.filter(c => c.sourceRectId !== rectId && c.targetRectId !== rectId);
-    if (pendingSource && pendingSource.rectId === rectId) pendingSource = null;
+    if (pendingSource?.rectId === rectId) pendingSource = null;
     updateParamConnectionsList();
     redrawParamLines();
 }
@@ -851,8 +888,8 @@ function makeDraggable(element, rectId) {
         dragging = true;
         startX = e.clientX;
         startY = e.clientY;
-        startLeft = parseFloat(element.style.left);
-        startTop = parseFloat(element.style.top);
+        startLeft = Number.parseFloat(element.style.left);
+        startTop = Number.parseFloat(element.style.top);
         document.addEventListener('mousemove', onMouseMove);
         document.addEventListener('mouseup', onMouseUp);
     });
@@ -876,7 +913,7 @@ function makeDraggable(element, rectId) {
  * @returns {string} Экранированная строка.
  */
 function escapeHtml(str) {
-	return String(str).replace(/[&<>]/g, function (m) {
+	return String(str).replaceAll(/[&<>]/g, function (m) {
 		return { '&': '&amp;', '<': '&lt;', '>': '&gt;'
 		}[m];
 	});
@@ -917,10 +954,58 @@ function setupDragDrop() {
  * Инициализирует демонстрационные блоки при загрузке страницы.
  */
 function initDemo() {
-    createFormulaBlock("F = m·a", "II закон Ньютона", ["F", "m", "a"], 50, 80);
-    createFormulaBlock("P = F/S", "Давление", ["P", "F", "S"], 360, 180);
-    createFormulaBlock("I = U/R", "Закон Ома", ["I", "U", "R"], 660, 90);
-    redrawParamLines();
+    const demoState = {
+        "version": "1.0",
+        "blocks": [
+            {
+                "id": 1008,
+                "formulaEq": "F = m·a",
+                "formulaName": "II закон Ньютона",
+                "vars": ["F", "m", "a"],
+                "left": 88.024,
+                "top": 61.0729,
+                "targetVar": "F",
+                "manualValues": { "m": "10", "a": "9.8" }
+            },
+            {
+                "id": 1009,
+                "formulaEq": "P = F/S",
+                "formulaName": "Давление",
+                "vars": ["P", "F", "S"],
+                "left": 496.024,
+                "top": 145.073,
+                "targetVar": "P",
+                "manualValues": { "F": "", "S": "3" }
+            },
+            {
+                "id": 1010,
+                "formulaEq": "P = ρ·g·h",
+                "formulaName": "Давление жидкости",
+                "vars": ["P", "ρ", "g", "h"],
+                "left": 870.024,
+                "top": 351.073,
+                "targetVar": "ρ",
+                "manualValues": { "ρ": "", "g": "", "h": "15" }
+            },
+            {
+                "id": 1012,
+                "formulaEq": "Fт = m·g",
+                "formulaName": "Сила тяжести",
+                "vars": ["Fт", "m", "g"],
+                "left": 495.024,
+                "top": 396.073,
+                "targetVar": "g",
+                "manualValues": { "m": "5", "g": "", "Fт": "98" }
+            }
+        ],
+        "paramConnections": [
+            { "sourceRectId": 1008, "sourceParam": "F", "targetRectId": 1009, "targetParam": "F" },
+            { "sourceRectId": 1009, "sourceParam": "P", "targetRectId": 1010, "targetParam": "P" },
+            { "sourceRectId": 1012, "sourceParam": "g", "targetRectId": 1010, "targetParam": "g" }
+        ],
+        "nextRectId": 1013
+    };
+    deserializeState(demoState);
 }
 
 /**
@@ -935,9 +1020,301 @@ function setConnectMode(active) {
     modeStatusSpan.innerText = active ? "Режим связи: выберите выходной порт" : "Режим: перемещение";
 }
 
+// ==================== СОХРАНЕНИЕ И ЗАГРУЗКА ====================
 
+function clearWorkspace() {
+    // Удаляем все блоки из DOM
+    for (let rect of rectangles.values()) {
+        rect.element.remove();
+    }
+    rectangles.clear();
+    paramConnections.length = 0;
+    pendingSource = null;
+    if (!connectModeActive) setConnectMode(false);
+    updateParamConnectionsList();
+    redrawParamLines();
+}
+
+function serializeState() {
+    const blocks = [];
+    for (let rect of rectangles.values()) {
+        const rectEl = rect.element;
+        blocks.push({
+            id: rect.id,
+            formulaEq: rect.formulaEq,
+            formulaName: rect.formulaName,
+            vars: rect.vars,
+            left: parseFloat(rectEl.style.left),
+            top: parseFloat(rectEl.style.top),
+            targetVar: rect.targetVar,
+            manualValues: rect.manualValues
+        });
+    }
+    return {
+        version: "1.0",
+        blocks: blocks,
+        paramConnections: paramConnections,
+        nextRectId: nextRectId
+    };
+}
+
+function deserializeState(state) {
+    if (!state || !state.blocks || !state.paramConnections) {
+        alert("Неверный формат файла");
+        return false;
+    }
+    
+    // Очищаем текущую сцену
+    clearWorkspace();
+    
+    // Восстанавливаем счётчик ID
+    nextRectId = state.nextRectId || 1000;
+    
+    // Сначала создаём все блоки (без связей, т.к. связи будут добавлены позже)
+    for (let block of state.blocks) {
+        createFormulaBlock(
+            block.formulaEq,
+            block.formulaName,
+            block.vars,
+            block.left,
+            block.top,
+            block.id,
+            block.targetVar,
+            block.manualValues
+        );
+    }
+    
+    // Восстанавливаем связи
+    for (let conn of state.paramConnections) {
+        // Проверяем, что оба блока существуют
+        if (rectangles.has(conn.sourceRectId) && rectangles.has(conn.targetRectId)) {
+            paramConnections.push({ ...conn });
+            // Обновляем отображение связанного параметра в целевом блоке
+            const targetRect = rectangles.get(conn.targetRectId);
+            if (targetRect) rebuildParamsList(targetRect);
+        } else {
+            console.warn("Пропущена связь из-за отсутствия блока", conn);
+        }
+    }
+    
+    // Обновляем UI списка связей и перерисовываем линии
+    updateParamConnectionsList();
+    redrawParamLines();
+    
+    // Пересчитываем все значения, чтобы обновить вычисленные поля
+    computeAll();
+    
+    return true;
+}
+
+function saveToFile() {
+    const state = serializeState();
+    const jsonStr = JSON.stringify(state, null, 2);
+    const blob = new Blob([jsonStr], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = "formula_workspace.json";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
+function loadFromFile() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'application/json';
+    input.onchange = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            try {
+                const state = JSON.parse(ev.target.result);
+                deserializeState(state);
+            } catch (err) {
+                alert("Ошибка при разборе файла: " + err.message);
+            }
+        };
+        reader.readAsText(file);
+    };
+    input.click();
+}
+
+function showHelp() {
+    let title = 'Руководство пользователя';
+    let content = `<p>Добро пожаловать в <strong>Конструктор формул</strong> – интерактивную среду для сборки и вычисления физических формул.</p>
+
+    <h3>1. Добавление формул</h3>
+    <ul>
+        <li>Слева находится <strong>библиотека формул</strong>, разбитая по разделам (Механика, Термодинамика, Электродинамика и т.д.).</li>
+        <li>Перетащите нужную формулу мышкой на серое рабочее поле – появится карточка с параметрами.</li>
+        <li>Каждая карточка содержит:
+            <ul>
+                <li>саму формулу (например, <code>F = m·a</code>);</li>
+                <li>список входных параметров (синие кружки);</li>
+                <li>выходной параметр (оранжевый кружок) – вычисляемый параметр.</li>
+            </ul>
+        </li>
+    </ul>
+
+    <h3>2. Перемещение и удаление блоков</h3>
+    <ul>
+        <li><strong>Перетаскивание:</strong> зажмите левую кнопку мыши на свободной области карточки (не на кружках и не на полях ввода) и двигайте.</li>
+        <li><strong>Удаление:</strong> нажмите крестик (X) в правом верхнем углу карточки.</li>
+    </ul>
+
+    <h3>3. Связывание параметров (передача данных между блоками)</h3>
+    <ul>
+        <li>Включите режим связывания кнопкой <strong>«Режим связи»</strong> на панели инструментов:
+        <ul>
+            <li><strong>(ON)</strong> - режим связывания ВКЛЮЧЕН;</li>
+            <li><strong>(OFF)</strong> - режим связывания ВЫКЛЮЧЕН.</li>
+        </ul>
+        </li>
+        <li>Сначала кликните на <strong>оранжевый кружок</strong> (выходной параметр) в одном блоке.</li>
+        <li>Затем кликните на <strong>синий кружок</strong> (входной параметр) в другом блоке.</li>
+        <li>Между блоками появится пунктирная линия со стрелкой – значение из выходного параметра будет автоматически передаваться во входной.</li>
+        <li><strong>Важно:</strong> связывать можно только <em>одноимённые параметры</em> (например, <code>F</code> → <code>F</code>).</li>
+        <li>Все созданные связи отображаются в нижней панели «Активные связи параметров». Там их можно удалять по отдельности или все сразу кнопкой «удалить все».</li>
+        <li>Чтобы выйти из режима связи, нажмите кнопку «Режим связи» вновь.</li>
+    </ul>
+
+    <h3>4. Ввод чисел</h3>
+    <ul>
+        <li>У каждого входного параметра есть поле ввода. Введите туда числовое значение (можно дробное, разделитель – точка).</li>
+        <li>Если параметр связан с другим блоком, его поле становится неактивным и отображает переданное значение.</li>
+    </ul>
+
+    <h3>5. Смена целевой переменной (что вычисляем)</h3>
+    <ul>
+        <li>По умолчанию формула решается относительно первого параметра (например, в <code>F = m·a</code> вычисляется <code>F</code>).</li>
+        <li>Кликните по области с названием выходного параметра (серая зона) – целевая переменная будет циклически переключаться на следующий параметр из формулы.</li>
+        <li>Соответственно, поля ввода для остальных параметров станут доступными, а выходной параметр изменится.</li>
+    </ul>
+
+    <h3>6. Вычисление</h3>
+    <ul>
+        <li>После того как все необходимые входные данные заданы (вручную или через связи), нажмите кнопку <strong>«ВЫЧИСЛИТЬ»</strong>.</li>
+        <li>Программа автоматически решит уравнения, если входные данные вписаны или связаны.</li>
+        <li>Результат появится в серой зоне (рядом с выходным параметром) и будет передан во все связанные блоки.</li>
+        <li>Если данных недостаточно или решение не найдено, то в значении параметра отобразится знак вопроса: «?».</li>
+    </ul>
+
+    <h3>7. Сохранение и загрузка проекта</h3>
+    <ul>
+        <li>Кнопка <strong>«СОХРАНИТЬ»</strong> – средствами браузера скачивает в "Загрузки" JSON-файл с полным состоянием: все блоки, их позиции, связи и введённые числа.</li>
+        <li>Кнопка <strong>«ЗАГРУЗИТЬ»</strong> – позволяет выбрать ранее сохранённый файл и восстановить рабочую область.</li>
+    </ul>
+
+    <h3>8. Советы</h3>
+    <ul>
+        <li>Если блок не вычисляется – проверьте, что все входные параметры имеют числовые значения (или связаны с вычисленными блоками).</li>
+        <li>Для сложных систем блоков вычисления могут потребовать нескольких итераций – просто нажмите «ВЫЧИСЛИТЬ» повторно.</li>
+    </ul>
+`;
+
+// Удаляем уже существующее окно, если оно есть
+    const existingModal = document.getElementById('infoModal');
+    if (existingModal) existingModal.remove();
+
+    // Создаём контейнер затемнения
+    const overlay = document.createElement('div');
+    overlay.id = 'infoModal';
+    overlay.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        backdrop-filter: blur(1px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10000;
+        font-family: 'Segoe UI', Roboto, system-ui, sans-serif;
+    `;
+
+    // Создаём окно
+    const modal = document.createElement('div');
+    modal.style.cssText = `
+        background: #fffef7;
+        border-radius: 32px;
+        max-width: 500px;
+        width: 90%;
+        max-height: 80vh;
+        overflow-y: auto;
+        box-shadow: 0 20px 35px rgba(0,0,0,0.2);
+        border: 2px solid #f59e0b;
+        display: flex;
+        flex-direction: column;
+    `;
+
+    // Заголовок
+    const header = document.createElement('div');
+    header.style.cssText = `
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 16px 20px;
+        border-bottom: 1px solid #e2e8f0;
+        font-weight: bold;
+        font-size: 1.2rem;
+        background: #fef3c7;
+        border-radius: 30px 30px 0 0;
+    `;
+    header.innerHTML = `<span>${escapeHtml(title)}</span><span style="cursor:pointer; font-size:24px;" id="closeInfoBtn">&times;</span>`;
+
+    // Тело окна
+    const body = document.createElement('div');
+    body.style.cssText = `
+        padding: 20px;
+        line-height: 1.5;
+        color: #1e293b;
+        font-size: 0.95rem;
+    `;
+
+    // Добавляем содержимое
+    if (typeof content === 'string') {
+        body.innerHTML = content;
+    } else if (content instanceof HTMLElement) {
+        body.appendChild(content);
+    }
+
+    modal.appendChild(header);
+    modal.appendChild(body);
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+
+    // Функция закрытия
+    const closeModal = () => overlay.remove();
+
+    // Закрытие по крестику
+    const closeBtn = document.getElementById('closeInfoBtn');
+    if (closeBtn) closeBtn.addEventListener('click', closeModal);
+
+    // Закрытие по клику на фон
+    overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) closeModal();
+    });
+
+    // Закрытие по Escape
+    const keyHandler = (e) => {
+        if (e.key === 'Escape') {
+            closeModal();
+            document.removeEventListener('keydown', keyHandler);
+        }
+    };
+    document.addEventListener('keydown', keyHandler);
+}
+
+
+saveBtn.addEventListener('click', () => saveToFile());
+loadBtn.addEventListener('click', () => loadFromFile());
 connModeBtn.addEventListener('click', () => setConnectMode(!connectModeActive));
-clearConnModeBtn.addEventListener('click', () => { pendingSource = null; setConnectMode(false); });
+helpBtn.addEventListener('click', () => showHelp() );
 computeBtn.addEventListener('click', computeAll);
 clearAllParamsConnBtn.addEventListener('click', () => {
     paramConnections = [];

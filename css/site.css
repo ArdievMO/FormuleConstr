@@ -163,18 +163,33 @@
         border-radius: 40px;
         font-weight: 500;
         background: white;
+        color: black;
         cursor: pointer;
         transition: 0.2s;
     }
+        .btn:hover {
+            background: gray;
+            color: white;
+        }
 
     .btn-primary {
-        background: #3b82f6;
-        border-color: #3b82f6;
-        color: white;
+        background: skyblue;
+        border-color: skyblue;
+        color: black;
     }
-
         .btn-primary:hover {
-            background: #2563eb;
+            background: darkblue;
+            color: white;
+        }
+
+    .btn-ctrl {
+        background: limegreen;
+        border-color: limegreen;
+        color: black;
+    }
+        .btn-ctrl:hover {
+            background: darkgreen;
+            color: white;
         }
 
     .btn-outline.active {
