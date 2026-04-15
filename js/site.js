@@ -16,7 +16,7 @@ const formulasLibrary = [
     { name: "II закон Ньютона", eq: "F = m·a", vars: ["F", "m", "a"], category: "Механика" },
     { name: "Закон Гука", eq: "Fy = -k·x", vars: ["Fy", "k", "x"], category: "Механика" },
     { name: "Кинетическая энергия", eq: "Ek = m·υ²/2", vars: ["Ek", "m", "υ"], category: "Механика" },
-    { name: "Работа", eq: "A = F·S·cosα", vars: ["A", "F", "S", "cosα"], category: "Механика" },
+    { name: "Работа", eq: "A = F·S·Math.cos(α)", vars: ["A", "F", "S", "α"], category: "Механика" },
     { name: "Мощность", eq: "N = A/t", vars: ["N", "A", "t"], category: "Механика" },
     { name: "Координата при равноускоренном движении", eq: "X = X0 + υ0·t + (a·t²)/2", vars: ["X", "X0", "υ0", "t", "a"], category: "Механика" },
     { name: "Перемещение при равноускоренном движении (без времени)", eq: "S = (υ2² - υ0²)/(2·a)", vars: ["S", "υ2", "υ0", "a"], category: "Механика" },
@@ -90,12 +90,12 @@ const formulasLibrary = [
     { name: "Закон Ома для полной цепи", eq: "I = ε/(R + r)", vars: ["I", "ε", "R", "r"], category: "Электродинамика" },
     { name: "Ток короткого замыкания", eq: "I = ε/r", vars: ["I", "ε", "r"], category: "Электродинамика" },
     { name: "Вектор магнитной индукции", eq: "B = Fmax/(I·ℓ)", vars: ["B", "Fmax", "I", "ℓ"], category: "Электродинамика" },
-    { name: "Сила Ампера", eq: "Fa = I·B·ℓ·sinα", vars: ["Fa", "I", "B", "ℓ", "sinα"], category: "Электродинамика" },
-    { name: "Сила Лоренца", eq: "Fл = B·q·υ·sinα", vars: ["Fл", "B", "q", "υ", "sinα"], category: "Электродинамика" },
-    { name: "Магнитный поток", eq: "Ф = B·S·cosα", vars: ["Ф", "B", "S", "cosα"], category: "Электродинамика" },
+    { name: "Сила Ампера", eq: "Fa = I·B·ℓ·Math.sin(α)", vars: ["Fa", "I", "B", "ℓ", "α"], category: "Электродинамика" },
+    { name: "Сила Лоренца", eq: "Fл = B·q·υ·Math.sin(α)", vars: ["Fл", "B", "q", "υ", "α"], category: "Электродинамика" },
+    { name: "Магнитный поток", eq: "Ф = B·S·Math.cos(α)", vars: ["Ф", "B", "S", "α"], category: "Электродинамика" },
     { name: "Магнитный поток через индуктивность", eq: "Ф = L·I", vars: ["Ф", "L", "I"], category: "Электродинамика" },
     { name: "Закон электромагнитной индукции", eq: "Ei = ΔФ/Δt", vars: ["Ei", "ΔФ", "Δt"], category: "Электродинамика" },
-    { name: "ЭДС индукции в движущемся проводнике", eq: "Ei = B·ℓ·υ·sinα", vars: ["Ei", "B", "ℓ", "υ", "sinα"], category: "Электродинамика" },
+    { name: "ЭДС индукции в движущемся проводнике", eq: "Ei = B·ℓ·υ·Math.sin(α)", vars: ["Ei", "B", "ℓ", "υ", "α"], category: "Электродинамика" },
     { name: "ЭДС самоиндукции", eq: "Esi = -L·ΔI/Δt", vars: ["Esi", "L", "ΔI", "Δt"], category: "Электродинамика" },
     { name: "Энергия магнитного поля катушки", eq: "Wм = L·I²/2", vars: ["Wм", "L", "I"], category: "Электродинамика" },
 
@@ -113,12 +113,12 @@ const formulasLibrary = [
 
     // ==================== ОПТИКА ====================
     { name: "Закон преломления света", eq: "n21 = n2/n1", vars: ["n21", "n2", "n1"], category: "Оптика" },
-    { name: "Показатель преломления", eq: "n21 = sinα/sinγ", vars: ["n21", "sinα", "sinγ"], category: "Оптика" },
+    { name: "Показатель преломления", eq: "n21 = Math.sin(α)/Math.sin(γ)", vars: ["n21", "α", "γ"], category: "Оптика" },
     { name: "Формула тонкой линзы", eq: "1/F = 1/d + 1/f", vars: ["F", "d", "f"], category: "Оптика" },
     { name: "Оптическая сила линзы", eq: "D = 1/F", vars: ["D", "F"], category: "Оптика" },
     { name: "Максимум интерференции", eq: "Δd = k·λ", vars: ["Δd", "k", "λ"], category: "Оптика" },
     { name: "Минимум интерференции", eq: "Δd = (2k+1)·λ/2", vars: ["Δd", "k", "λ"], category: "Оптика" },
-    { name: "Дифракционная решетка", eq: "d·sinφ = k·λ", vars: ["d", "sinφ", "k", "λ"], category: "Оптика" },
+    { name: "Дифракционная решетка", eq: "d·Math.sin(φ) = k·λ", vars: ["d", "φ", "k", "λ"], category: "Оптика" },
 
     // ==================== КВАНТОВАЯ ФИЗИКА ====================
     { name: "Формула Эйнштейна для фотоэффекта", eq: "h·ν = Aвых + Ek", vars: ["h", "ν", "Aвых", "Ek"], category: "Квантовая физика" },
@@ -271,6 +271,7 @@ const computeBtn = document.getElementById('computeBtn');
 const modeStatusSpan = document.getElementById('modeStatus');
 const paramConnListDiv = document.getElementById('paramConnList');
 const clearAllParamsConnBtn = document.getElementById('clearAllParamsConn');
+const clearAllBtn = document.getElementById('clearAll');
 
 /**
  * Вычисляет относительные координаты события внутри контейнера.
@@ -397,7 +398,8 @@ function removeParamConnection(index) {
     if (!conn) return;
     paramConnections.splice(index, 1);
     const targetRect = rectangles.get(conn.targetRectId);
-    if (targetRect) rebuildParamsList(targetRect);
+    if (targetRect)
+        rebuildParamsList(targetRect);
     updateParamConnectionsList();
     redrawParamLines();
 }
@@ -464,6 +466,7 @@ function rebuildParamsList(rect) {
     }
 }
 
+
 /**
  * Находит строку параметра в DOM-элементе блока по имени параметра.
  * @param {HTMLElement} rectEl - Корневой элемент блока.
@@ -500,12 +503,8 @@ function addParamConnection(sourceRectId, sourceParam, targetRectId, targetParam
         alert("Нельзя подключать вход к вычисляемому параметру цели!");
         return false;
     }
-    if (paramConnections.some(c => c.sourceRectId === sourceRectId && c.sourceParam === sourceParam)) {
-        alert("Параметр уже связан!");
-        return false;
-    }
     if (paramConnections.some(c => c.targetRectId === targetRectId && c.targetParam === targetParam)) {
-        alert("Параметр уже связан!");
+        alert("Входной параметр уже связан!");
         return false;
     }
     if (sourceRectId === targetRectId) {
@@ -866,7 +865,10 @@ function createFormulaBlock(formulaEq, formulaName, varsArray, left, top, id = n
     rectangles.set(rectId, rectData);
     
     const deleteBtn = rectDiv.querySelector('.delete-card');
-    deleteBtn.addEventListener('click', (e) => { e.stopPropagation(); deleteRectangle(rectId); });
+    deleteBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        deleteRectangle(rectId);
+    });
     
     rectDiv.querySelectorAll('.port').forEach(port => {
         port.addEventListener('click', (e) => {
@@ -1076,8 +1078,20 @@ function handlePortClick(rectId, param, isOutput) {
 function deleteRectangle(rectId) {
     const rect = rectangles.get(rectId);
     if (!rect) return;
+
+    connectionForDelete = [];
+    paramConnections.reverse().forEach((conn, idx) => {
+        if (conn.sourceRectId === rectId || conn.targetRectId === rectId)
+            removeParamConnection(idx);
+    });
     rect.element.remove();
     rectangles.delete(rectId);
+
+    for (let r of rectangles.values()){
+        rebuildParamsList(r);
+        updateParamConnectionsList();
+        redrawParamLines();
+    }
     paramConnections = paramConnections.filter(c => c.sourceRectId !== rectId && c.targetRectId !== rectId);
     if (pendingSource?.rectId === rectId) pendingSource = null;
     updateParamConnectionsList();
@@ -1165,13 +1179,13 @@ function setupDragDrop() {
         y = Math.max(10, Math.min(y, graphArea.clientHeight - 200));
         if (data.name === "Арифметический оператор") {
             if (data.eq.includes('+')) {
-                createCustomBlock(x, y, '+', null);
+                createCustomBlock(x, y, null, '+');
             } else if (data.eq.includes('-')) {
-                createCustomBlock(x, y, '-', null);
+                createCustomBlock(x, y, null, '-');
             } else if (data.eq.includes('·')) {
-                createCustomBlock(x, y, '*', null);
+                createCustomBlock(x, y, null, '*');
             } else if (data.eq.includes('/')) {
-                createCustomBlock(x, y, '/', null);
+                createCustomBlock(x, y, null, '/');
             }
         } else {
             createFormulaBlock(data.eq, data.name, data.vars, x, y);
@@ -1935,7 +1949,17 @@ graphBtn.addEventListener('click', () => {
 computeBtn.addEventListener('click', computeAll);
 clearAllParamsConnBtn.addEventListener('click', () => {
     paramConnections = [];
-    for (let rect of rectangles.values()) rebuildParamsList(rect);
+    for (let rect of rectangles.values())
+        rebuildParamsList(rect);
+    updateParamConnectionsList();
+    redrawParamLines();
+});
+clearAllBtn.addEventListener('click', () => {
+    paramConnections = [];
+    for (let rect of rectangles.values()){
+        rebuildParamsList(rect);
+        deleteRectangle(rect.id);
+    }
     updateParamConnectionsList();
     redrawParamLines();
 });

@@ -1,5 +1,4 @@
-﻿<!DOCTYPE html>
-<html>
+﻿<html>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -42,7 +41,10 @@
             <div class="connections-panel">
                 <div style="display: flex; justify-content: space-between;">
                     <span>Активные связи параметров</span>
-                    <button id="clearAllParamsConn" style="background:none; border:none; color:#ef4444; cursor:pointer;">удалить все</button>
+                    <div class="toolbar">
+                        <button id="clearAllParamsConn" class="btn btn-outline" style="color:#ef4444; cursor:pointer;">удалить все связи</button>
+                        <button id="clearAll" class="btn btn-outline" style="color:#ef4444; cursor:pointer;">очистить всё поле</button>
+                    </div>
                 </div>
                 <div id="paramConnList"></div>
             </div>
