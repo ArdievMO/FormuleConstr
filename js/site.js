@@ -669,7 +669,12 @@ function normalizeExpression(expr) {
  * @returns {number|null} Решение или null, если не удалось найти.
  */
 function solveEquation(eq, vars, knownValues, targetVar) {
-    // Определяем функцию невязки
+    // Нормализует выражение: заменяет символы умножения и степени
+    function normalizeExpression(expr) {
+        return expr.replaceAll('·', '*').replaceAll('²', '**2');
+    }
+
+    // Функция невязки: f(x) = левая_часть - правая_часть
     function residual(x) {
         const env = {};
         let [left, right] = eq.split('=').map(s => s.trim());
@@ -678,9 +683,9 @@ function solveEquation(eq, vars, knownValues, targetVar) {
         right = normalizeExpression(right);
         const exprStr = `(${left}) - (${right})`;
         for (let v of vars) {
-            if (v === targetVar) env[v] = x;
-            else env[v] = knownValues[v];
+            env[v] = (v === targetVar) ? x : knownValues[v];
         }
+        // Проверяем, что все значения определены и не NaN
         for (let v of vars) {
             if (env[v] === undefined || isNaN(env[v])) return NaN;
         }
@@ -692,65 +697,86 @@ function solveEquation(eq, vars, knownValues, targetVar) {
         }
     }
 
-    // Поиск интервала [a, b], где residual(a) и residual(b) имеют разные знаки
+    // --- Поиск интервала [a, b], где residual(a) и residual(b) имеют разные знаки ---
+    const EPS = 1e-12;          // точность по невязке
+    const MAX_STEPS = 100;      // максимальное число расширений интервала
+    const SMALL = 1e-9;         // малое число для обхода разрывов
+
     let a = 0, b = 0;
     let fa = residual(a);
-    if (isNaN(fa)) return null;
     
-    // Если в нуле уже корень (с точностью до эпсилон)
-    if (Math.abs(fa) < 1e-12) return a;
+    // Если в нуле уже корень (с точностью до EPS)
+    if (!isNaN(fa) && Math.abs(fa) < EPS) return a;
     
-    let step = 1;
-    let maxSteps = 100;
+    let step = 1.0;
     let found = false;
     
-    // Расширяем интервал в положительную и отрицательную стороны
-    for (let i = 0; i < maxSteps; i++) {
-        a = step;
-        b = -step;
-        fa = residual(a);
-        const fb = residual(b);
-        if (isNaN(fa) || isNaN(fb)) {
-            step *= 2;
-            continue;
+    for (let i = 0; i < MAX_STEPS; i++) {
+        // Пробуем симметричный интервал [-step, step]
+        let left = -step;
+        let right = step;
+        let f_left = residual(left);
+        let f_right = residual(right);
+        
+        // Если значение в точке не определено (NaN), смещаемся на SMALL
+        if (isNaN(f_left)) {
+            left += SMALL;
+            f_left = residual(left);
         }
-        if (fa * fb < 0) {
+        if (isNaN(f_right)) {
+            right -= SMALL;
+            f_right = residual(right);
+        }
+        
+        // Если удалось получить конечные значения и знаки разные – интервал найден
+        if (!isNaN(f_left) && !isNaN(f_right) && f_left * f_right < 0) {
+            a = left;
+            b = right;
             found = true;
             break;
         }
-        // Если на симметричном интервале знаки одинаковые, но функция может быть, например, чётной,
-        // пробуем сместить интервал, чтобы захватить область, где знак меняется.
-        // Для этого проверяем не только симметричный, но и [0, step] и [-step, 0]
-        const f0 = residual(0);
-        if (!Number.isNaN(f0) && f0 * fa < 0) {
-            a = 0; b = -step; // но b должно быть больше a
-            if (a > b) { let t = a; a = b; b = t; }
+        
+        // Пробуем интервал [0, step] (если ещё не проверяли)
+        let f0 = residual(0);
+        if (!isNaN(f0) && !isNaN(f_right) && f0 * f_right < 0) {
+            a = 0;
+            b = step;
             found = true;
             break;
         }
-        if (!Number.isNaN(f0) && f0 * fb < 0) {
-            a = 0; b = step;
+        
+        // Пробуем интервал [-step, 0]
+        if (!isNaN(f0) && !isNaN(f_left) && f0 * f_left < 0) {
+            a = -step;
+            b = 0;
             found = true;
             break;
         }
+        
+        // Расширяем интервал
         step *= 2;
     }
     
-    if (!found) return null; // не удалось найти интервал со сменой знака
+    if (!found) return null;   // не удалось найти интервал со сменой знака
     
-    // Убедимся, что a < b
+    // Убеждаемся, что a < b
     if (a > b) { let t = a; a = b; b = t; }
     
-    // Метод бисекции на найденном интервале
+    // --- Метод бисекции на найденном интервале ---
     let root = null;
-    for (let iter = 0; iter < 80; iter++) {
+    const MAX_ITER = 80;
+    for (let iter = 0; iter < MAX_ITER; iter++) {
         const mid = (a + b) / 2;
         const fm = residual(mid);
-        if (Math.abs(fm) < 1e-12) {
+        if (Math.abs(fm) < EPS) {
             root = mid;
             break;
         }
-        if (isNaN(fm)) return null;
+        if (isNaN(fm)) {
+            // Если в середине разрыв, сдвигаем границы
+            a = mid + SMALL;
+            continue;
+        }
         const fa_curr = residual(a);
         if (fa_curr * fm < 0) {
             b = mid;
@@ -760,14 +786,12 @@ function solveEquation(eq, vars, knownValues, targetVar) {
     }
     if (root === null) root = (a + b) / 2;
     
-    // ========== КОРРЕКЦИЯ ЗНАКА ДЛЯ ФИЗИЧЕСКИ ПОЛОЖИТЕЛЬНЫХ ВЕЛИЧИН ==========
-    // Если найденный корень отрицательный, проверим, является ли положительный корень тоже решением
+    // --- Коррекция знака: для физических величин предпочитаем положительный корень ---
     if (root < 0) {
         const posRoot = -root;
         const resPos = residual(posRoot);
         const resNeg = residual(root);
-        // Если невязка положительного корня меньше (или равна с учётом погрешности) – выбираем положительный
-        if (Math.abs(resPos) <= Math.abs(resNeg) + 1e-10) {
+        if (!isNaN(resPos) && Math.abs(resPos) <= Math.abs(resNeg) + EPS) {
             root = posRoot;
         }
     }
