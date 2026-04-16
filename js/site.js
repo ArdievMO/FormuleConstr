@@ -685,7 +685,6 @@ function solveEquation(eq, vars, knownValues, targetVar) {
         for (let v of vars) {
             env[v] = (v === targetVar) ? x : knownValues[v];
         }
-        // Проверяем, что все значения определены и не NaN
         for (let v of vars) {
             if (env[v] === undefined || isNaN(env[v])) return NaN;
         }
@@ -697,74 +696,116 @@ function solveEquation(eq, vars, knownValues, targetVar) {
         }
     }
 
-    // --- Поиск интервала [a, b], где residual(a) и residual(b) имеют разные знаки ---
-    const EPS = 1e-12;          // точность по невязке
-    const MAX_STEPS = 100;      // максимальное число расширений интервала
-    const SMALL = 1e-9;         // малое число для обхода разрывов
+    const EPS = 1e-12;
+    const MAX_ITER = 80;
+    const SMALL = 1e-9;
+    const MAX_HIGH = 1e6;  // максимальное значение для поиска интервала
 
-    let a = 0, b = 0;
-    let fa = residual(a);
-    
-    // Если в нуле уже корень (с точностью до EPS)
-    if (!isNaN(fa) && Math.abs(fa) < EPS) return a;
-    
-    let step = 1.0;
-    let found = false;
-    
-    for (let i = 0; i < MAX_STEPS; i++) {
-        // Пробуем симметричный интервал [-step, step]
-        let left = -step;
-        let right = step;
-        let f_left = residual(left);
-        let f_right = residual(right);
-        
-        // Если значение в точке не определено (NaN), смещаемся на SMALL
-        if (isNaN(f_left)) {
-            left += SMALL;
-            f_left = residual(left);
-        }
-        if (isNaN(f_right)) {
-            right -= SMALL;
-            f_right = residual(right);
-        }
-        
-        // Если удалось получить конечные значения и знаки разные – интервал найден
-        if (!isNaN(f_left) && !isNaN(f_right) && f_left * f_right < 0) {
-            a = left;
-            b = right;
-            found = true;
-            break;
-        }
-        
-        // Пробуем интервал [0, step] (если ещё не проверяли)
-        let f0 = residual(0);
-        if (!isNaN(f0) && !isNaN(f_right) && f0 * f_right < 0) {
-            a = 0;
-            b = step;
-            found = true;
-            break;
-        }
-        
-        // Пробуем интервал [-step, 0]
-        if (!isNaN(f0) && !isNaN(f_left) && f0 * f_left < 0) {
-            a = -step;
-            b = 0;
-            found = true;
-            break;
-        }
-        
-        // Расширяем интервал
-        step *= 2;
+    // ---- Поиск интервала [a, b] с разными знаками ----
+    let a = null, b = null;
+
+    // 1. Поиск в положительной области (x > 0)
+    let low = SMALL;
+    let high = 1.0;
+    let f_low = residual(low);
+    let f_high = residual(high);
+    // Если на low или high NaN, пробуем сдвинуть
+    while (isNaN(f_low) && low < MAX_HIGH) {
+        low += SMALL;
+        f_low = residual(low);
     }
-    
-    if (!found) return null;   // не удалось найти интервал со сменой знака
-    
+    while (isNaN(f_high) && high < MAX_HIGH) {
+        high += SMALL;
+        f_high = residual(high);
+    }
+    if (!isNaN(f_low) && !isNaN(f_high)) {
+        // Расширяем high, пока не будет смены знака или не превысим лимит
+        while (f_low * f_high >= 0 && high < MAX_HIGH) {
+            high *= 2;
+            f_high = residual(high);
+            while (isNaN(f_high) && high < MAX_HIGH) {
+                high += SMALL;
+                f_high = residual(high);
+            }
+        }
+        if (f_low * f_high < 0) {
+            a = low;
+            b = high;
+        } else if (Math.abs(f_low) < EPS) {
+            return low;
+        } else if (Math.abs(f_high) < EPS) {
+            return high;
+        }
+    }
+
+    // 2. Если не нашли, поиск в отрицательной области (x < 0)
+    if (a === null) {
+        let low_neg = -MAX_HIGH;
+        let high_neg = -SMALL;
+        let f_low_neg = residual(low_neg);
+        let f_high_neg = residual(high_neg);
+        while (isNaN(f_low_neg) && low_neg > -MAX_HIGH) {
+            low_neg -= SMALL;
+            f_low_neg = residual(low_neg);
+        }
+        while (isNaN(f_high_neg) && high_neg > -MAX_HIGH) {
+            high_neg -= SMALL;
+            f_high_neg = residual(high_neg);
+        }
+        if (!isNaN(f_low_neg) && !isNaN(f_high_neg)) {
+            // Расширяем low_neg вниз (увеличиваем по модулю)
+            while (f_low_neg * f_high_neg >= 0 && low_neg > -MAX_HIGH) {
+                low_neg *= 2;
+                f_low_neg = residual(low_neg);
+                while (isNaN(f_low_neg) && low_neg > -MAX_HIGH) {
+                    low_neg -= SMALL;
+                    f_low_neg = residual(low_neg);
+                }
+            }
+            if (f_low_neg * f_high_neg < 0) {
+                a = low_neg;
+                b = high_neg;
+            } else if (Math.abs(f_low_neg) < EPS) {
+                return low_neg;
+            } else if (Math.abs(f_high_neg) < EPS) {
+                return high_neg;
+            }
+        }
+    }
+
+    // 3. Если не нашли, пробуем старый симметричный метод с защитой от NaN
+    if (a === null) {
+        let step = 1.0;
+        let found = false;
+        for (let i = 0; i < 50; i++) {
+            let left = -step;
+            let right = step;
+            let f_left = residual(left);
+            let f_right = residual(right);
+            if (isNaN(f_left)) {
+                left += SMALL;
+                f_left = residual(left);
+            }
+            if (isNaN(f_right)) {
+                right -= SMALL;
+                f_right = residual(right);
+            }
+            if (!isNaN(f_left) && !isNaN(f_right) && f_left * f_right < 0) {
+                a = left;
+                b = right;
+                found = true;
+                break;
+            }
+            step *= 2;
+        }
+        if (!found) return null;
+    }
+
     // Убеждаемся, что a < b
     if (a > b) { let t = a; a = b; b = t; }
-    
-    // --- Метод бисекции на найденном интервале ---
+
+    // ---- Метод бисекции на интервале [a, b] ----
     let root = null;
-    const MAX_ITER = 80;
     for (let iter = 0; iter < MAX_ITER; iter++) {
         const mid = (a + b) / 2;
         const fm = residual(mid);
@@ -773,20 +814,19 @@ function solveEquation(eq, vars, knownValues, targetVar) {
             break;
         }
         if (isNaN(fm)) {
-            // Если в середине разрыв, сдвигаем границы
             a = mid + SMALL;
             continue;
         }
-        const fa_curr = residual(a);
-        if (fa_curr * fm < 0) {
+        const fa = residual(a);
+        if (fa * fm < 0) {
             b = mid;
         } else {
             a = mid;
         }
     }
     if (root === null) root = (a + b) / 2;
-    
-    // --- Коррекция знака: для физических величин предпочитаем положительный корень ---
+
+    // Коррекция знака: предпочитаем положительный корень, если он есть
     if (root < 0) {
         const posRoot = -root;
         const resPos = residual(posRoot);
@@ -795,7 +835,7 @@ function solveEquation(eq, vars, knownValues, targetVar) {
             root = posRoot;
         }
     }
-    
+
     return root;
 }
 
