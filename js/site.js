@@ -771,17 +771,20 @@ function solveEquation(eq, vars, knownValues, targetVar) {
     const EPS = 1e-12;
     const MAX_ITER = 80;
     const SMALL = 1e-9;
-    const MAX_HIGH = 1e6;  // максимальное значение для поиска интервала
+    const MAX_HIGH = 1e6;
 
-    // ---- Поиск интервала [a, b] с разными знаками ----
     let a = null, b = null;
 
-    // 1. Поиск в положительной области (x > 0)
-    let low = SMALL;
+    // ---- 1. Поиск в положительной области (x >= 0) ----
+    let low = 0;
     let high = 1.0;
     let f_low = residual(low);
     let f_high = residual(high);
-    // Если на low или high NaN, пробуем сдвинуть
+
+    // Проверка границ на корень (для кратных корней)
+    if (Math.abs(f_low) < EPS) return low;
+    if (Math.abs(f_high) < EPS) return high;
+
     while (isNaN(f_low) && low < MAX_HIGH) {
         low += SMALL;
         f_low = residual(low);
@@ -790,14 +793,17 @@ function solveEquation(eq, vars, knownValues, targetVar) {
         high += SMALL;
         f_high = residual(high);
     }
+
     if (!isNaN(f_low) && !isNaN(f_high)) {
-        // Расширяем high, пока не будет смены знака или не превысим лимит
         while (f_low * f_high >= 0 && high < MAX_HIGH) {
             high *= 2;
             f_high = residual(high);
+            // Проверка на корень внутри цикла расширения
+            if (Math.abs(f_high) < EPS) return high;
             while (isNaN(f_high) && high < MAX_HIGH) {
                 high += SMALL;
                 f_high = residual(high);
+                if (Math.abs(f_high) < EPS) return high;
             }
         }
         if (f_low * f_high < 0) {
@@ -810,12 +816,16 @@ function solveEquation(eq, vars, knownValues, targetVar) {
         }
     }
 
-    // 2. Если не нашли, поиск в отрицательной области (x < 0)
+    // ---- 2. Поиск в отрицательной области (x < 0) ----
     if (a === null) {
         let low_neg = -MAX_HIGH;
         let high_neg = -SMALL;
         let f_low_neg = residual(low_neg);
         let f_high_neg = residual(high_neg);
+
+        if (Math.abs(f_low_neg) < EPS) return low_neg;
+        if (Math.abs(f_high_neg) < EPS) return high_neg;
+
         while (isNaN(f_low_neg) && low_neg > -MAX_HIGH) {
             low_neg -= SMALL;
             f_low_neg = residual(low_neg);
@@ -825,13 +835,14 @@ function solveEquation(eq, vars, knownValues, targetVar) {
             f_high_neg = residual(high_neg);
         }
         if (!isNaN(f_low_neg) && !isNaN(f_high_neg)) {
-            // Расширяем low_neg вниз (увеличиваем по модулю)
             while (f_low_neg * f_high_neg >= 0 && low_neg > -MAX_HIGH) {
                 low_neg *= 2;
                 f_low_neg = residual(low_neg);
+                if (Math.abs(f_low_neg) < EPS) return low_neg;
                 while (isNaN(f_low_neg) && low_neg > -MAX_HIGH) {
                     low_neg -= SMALL;
                     f_low_neg = residual(low_neg);
+                    if (Math.abs(f_low_neg) < EPS) return low_neg;
                 }
             }
             if (f_low_neg * f_high_neg < 0) {
@@ -845,7 +856,7 @@ function solveEquation(eq, vars, knownValues, targetVar) {
         }
     }
 
-    // 3. Если не нашли, пробуем старый симметричный метод с защитой от NaN
+    // ---- 3. Симметричный поиск (запасной) ----
     if (a === null) {
         let step = 1.0;
         let found = false;
@@ -854,6 +865,8 @@ function solveEquation(eq, vars, knownValues, targetVar) {
             let right = step;
             let f_left = residual(left);
             let f_right = residual(right);
+            if (Math.abs(f_left) < EPS) return left;
+            if (Math.abs(f_right) < EPS) return right;
             if (isNaN(f_left)) {
                 left += SMALL;
                 f_left = residual(left);
@@ -876,7 +889,7 @@ function solveEquation(eq, vars, knownValues, targetVar) {
     // Убеждаемся, что a < b
     if (a > b) { let t = a; a = b; b = t; }
 
-    // ---- Метод бисекции на интервале [a, b] ----
+    // ---- Метод бисекции ----
     let root = null;
     for (let iter = 0; iter < MAX_ITER; iter++) {
         const mid = (a + b) / 2;
@@ -898,7 +911,7 @@ function solveEquation(eq, vars, knownValues, targetVar) {
     }
     if (root === null) root = (a + b) / 2;
 
-    // Коррекция знака: предпочитаем положительный корень, если он есть
+    // Коррекция знака (отдаём предпочтение положительному корню)
     if (root < 0) {
         const posRoot = -root;
         const resPos = residual(posRoot);
