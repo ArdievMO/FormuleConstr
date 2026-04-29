@@ -526,114 +526,170 @@ function addParamConnection(sourceRectId, sourceParam, targetRectId, targetParam
 }
 
 /**
- * Вычисляет значения всех блоков, используя ручные вводы и связи.
- * Выполняет итеративное решение до тех пор, пока есть изменения.
+ * Строит граф зависимостей между блоками на основе связей параметров.
+ * Возвращает массив ID блоков в порядке вычисления: от источников к потребителям.
+ * Если обнаружен цикл, возвращает null и выводит предупреждение.
+ * @returns {number[]|null} - упорядоченный массив ID блоков или null при цикле.
+ */
+function getTopologicalOrder() {
+    // Строим граф: для каждого блока список блоков, от которых он зависит (входные связи)
+    const dependents = new Map(); // key: rectId, value: Set(rectId блоков, от которых зависит данный блок)
+    const allBlocks = Array.from(rectangles.keys());
+    for (let rect of rectangles.values()) {
+        dependents.set(rect.id, new Set());
+    }
+    // Заполняем зависимости: если есть связь sourceRectId -> targetRectId (targetParam),
+    // то targetRectId зависит от sourceRectId.
+    for (let conn of paramConnections) {
+        const src = conn.sourceRectId;
+        const tgt = conn.targetRectId;
+        if (src !== tgt) {
+            dependents.get(tgt).add(src);
+        }
+    }
+    
+    // Алгоритм Кана (Kahn's algorithm) для топологической сортировки
+    const inDegree = new Map(); // количество входящих рёбер (зависимостей, которые ещё не обработаны)
+    for (let id of allBlocks) {
+        inDegree.set(id, dependents.get(id).size);
+    }
+    // Очередь из блоков, не имеющих непроцессорных зависимостей (inDegree === 0)
+    const queue = [];
+    for (let id of allBlocks) {
+        if (inDegree.get(id) === 0) queue.push(id);
+    }
+    const order = [];
+    while (queue.length > 0) {
+        const current = queue.shift();
+        order.push(current);
+        // Находим все блоки, которые зависят от current (т.е. для которых current есть в dependents)
+        // Для этого нужно знать обратные связи. Можно построить отдельную карту: кто зависит от меня.
+        // Построим "reverse" карту при первом проходе.
+    }
+    // Для эффективности сначала построим reverse граф (ведёт от src к списку tgt)
+    const reverseGraph = new Map(); // key: srcId, value: Set(tgtId, которые зависят от srcId)
+    for (let rect of rectangles.values()) {
+        reverseGraph.set(rect.id, new Set());
+    }
+    for (let conn of paramConnections) {
+        const src = conn.sourceRectId;
+        const tgt = conn.targetRectId;
+        if (src !== tgt) {
+            reverseGraph.get(src).add(tgt);
+        }
+    }
+    // Пересчитаем inDegree заново с учётом только рёбер, не ведущих к себе
+    const inDegree2 = new Map();
+    for (let id of allBlocks) {
+        inDegree2.set(id, 0);
+    }
+    for (let conn of paramConnections) {
+        if (conn.sourceRectId !== conn.targetRectId) {
+            inDegree2.set(conn.targetRectId, inDegree2.get(conn.targetRectId) + 1);
+        }
+    }
+    const queue2 = [];
+    for (let id of allBlocks) {
+        if (inDegree2.get(id) === 0) queue2.push(id);
+    }
+    const order2 = [];
+    while (queue2.length > 0) {
+        const current = queue2.shift();
+        order2.push(current);
+        const children = reverseGraph.get(current) || new Set();
+        for (let child of children) {
+            const newDeg = inDegree2.get(child) - 1;
+            inDegree2.set(child, newDeg);
+            if (newDeg === 0) queue2.push(child);
+        }
+    }
+    if (order2.length !== allBlocks.length) {
+        console.warn("Обнаружен цикл в зависимостях блоков");
+        return null; // цикл
+    }
+    return order2;
+}
+
+/**
+ * Вычисляет все блоки, используя предварительно вычисленный порядок (топологическую сортировку).
+ * Если порядок не может быть построен (цикл), выводит сообщение и возвращает false.
+ * @returns {boolean} - true, если все доступные блоки успешно вычислены (или вычислены частично при константах), false при цикле.
  */
 function computeAll() {
+    // Сначала сбрасываем значения
     for (let rect of rectangles.values()) {
         rect.computedValue = null;
-        const targetDiv = rect.element.querySelector('.target-value');
-        if (targetDiv)
-            targetDiv.innerText = '?';
+        const targetSpan = rect.element.querySelector('.target-value');
+        if (targetSpan) targetSpan.innerText = '?';
     }
-    let changed = true;
-    let maxIter = 50;
-    let iter = 0;
-    while (changed && iter < maxIter) {
-        changed = false;
-        for (let rect of rectangles.values()) {
-            if (rect.computedValue !== null)
-                continue;
-            
-            let allInputsReady = true;
-            if (rect.isCustom) {
-                // Получаем значение in
-                let inVal = null;
-                const inConn = paramConnections.find(c => c.targetRectId === rect.id && c.targetParam === 'in');
-                if (inConn) {
-                    const srcRect = rectangles.get(inConn.sourceRectId);
-                    if (srcRect && srcRect.computedValue !== null) {
-                        inVal = srcRect.computedValue;
-                    } else {
-                        allInputsReady = false;
-                    }
-                } else {
-                    const manualIn = rect.manualValues.in;
-                    if (manualIn !== undefined && manualIn.trim() !== '' && !isNaN(Number.parseFloat(manualIn))) {
-                        inVal = Number.parseFloat(manualIn);
-                    } else {
-                        allInputsReady = false;
-                    }
-                }
-                // Получаем coeff (только ручной ввод)
-                let coeffVal = null;
-                const manualCoeff = rect.manualValues.coeff;
-                if (manualCoeff !== undefined && manualCoeff.trim() !== '' && !isNaN(Number.parseFloat(manualCoeff))) {
-                    coeffVal = Number.parseFloat(manualCoeff);
+    
+    const order = getTopologicalOrder();
+    if (order === null) {
+        alert("Ошибка: обнаружен циклическая зависимость между блоками. Исправьте связи.");
+        return false;
+    }
+    
+    // Вычисляем блоки строго в порядке от источников к потребителям
+    for (let rectId of order) {
+        const rect = rectangles.get(rectId);
+        if (!rect) continue;
+        
+        // Собираем значения всех входных параметров (кроме целевого)
+        let allInputsReady = true;
+        const inputValues = {};
+        for (let v of rect.vars) {
+            if (v === rect.targetVar) continue;
+            // Проверяем, есть ли связь для этого параметра
+            const conn = paramConnections.find(c => c.targetRectId === rect.id && c.targetParam === v);
+            if (conn) {
+                const sourceRect = rectangles.get(conn.sourceRectId);
+                if (sourceRect && sourceRect.computedValue !== null) {
+                    inputValues[v] = sourceRect.computedValue;
                 } else {
                     allInputsReady = false;
+                    break;
                 }
-                if (allInputsReady && inVal !== null && coeffVal !== null) {
-                    let result = null;
-                    switch (rect.operation) {
-                        case '+': result = inVal + coeffVal; break;
-                        case '-': result = inVal - coeffVal; break;
-                        case '*': result = inVal * coeffVal; break;
-                        case '/': result = coeffVal !== 0 ? inVal / coeffVal : NaN; break;
-                    }
-                    if (result !== null && isFinite(result)) {
-                        rect.computedValue = result;
-                        const targetSpan = rect.element.querySelector('.target-value');
-                        if (targetSpan) targetSpan.innerText = result.toFixed(4);
-                        changed = true;
-                    }
+            } else {
+                const manualVal = rect.manualValues[v];
+                if (manualVal !== undefined && manualVal.trim() !== '' && !isNaN(parseFloat(manualVal))) {
+                    inputValues[v] = parseFloat(manualVal);
+                } else {
+                    allInputsReady = false;
+                    break;
                 }
-                continue;
-            }
-            const inputValues = {};
-            allInputsReady = true;
-            for (let v of rect.vars) {
-                if (v === rect.targetVar)
-                    continue;
-                const connection = paramConnections.find(c => c.targetRectId === rect.id && c.targetParam === v);
-                if (connection) {
-                    const sourceRect = rectangles.get(connection.sourceRectId);
-                    if (sourceRect && sourceRect.computedValue !== null) {
-                        inputValues[v] = sourceRect.computedValue;
-                    }
-                    else {
-                        allInputsReady = false;
-                        break;
-                    }
-                }
-                else {
-                    const manualVal = rect.manualValues[v];
-                    if (manualVal !== undefined && manualVal.trim() !== '' && !Number.isNaN(Number.parseFloat(manualVal))) {
-                        inputValues[v] = Number.parseFloat(manualVal);
-                    }
-                    else {
-                        allInputsReady = false;
-                        break;
-                    }
-                }
-            }
-            if (!allInputsReady)
-                continue;
-            const result = solveEquation(rect.formulaEq, rect.vars, inputValues, rect.targetVar);
-            if (result !== null && Number.isFinite(result)) {
-                rect.computedValue = result;
-                const targetValueSpan = rect.element.querySelector('.target-value');
-                if (targetValueSpan) targetValueSpan.innerText = result.toFixed(4);
-                changed = true;
             }
         }
-        iter++;
+        if (!allInputsReady) continue; // не все входы готовы – возможно, позже, но порядок должен это исключать
+        
+        let result = null;
+        if (rect.isCustom) {
+            const inVal = inputValues.in;
+            const coeffVal = rect.manualValues.coeff !== undefined && rect.manualValues.coeff.trim() !== '' ? parseFloat(rect.manualValues.coeff) : NaN;
+            if (!isNaN(inVal) && !isNaN(coeffVal)) {
+                switch (rect.operation) {
+                    case '+': result = inVal + coeffVal; break;
+                    case '-': result = inVal - coeffVal; break;
+                    case '*': result = inVal * coeffVal; break;
+                    case '/': result = coeffVal !== 0 ? inVal / coeffVal : NaN; break;
+                }
+            } else {
+                continue;
+            }
+        } else {
+            // Стандартная формула
+            result = solveEquation(rect.formulaEq, rect.vars, inputValues, rect.targetVar);
+        }
+        if (result !== null && isFinite(result)) {
+            rect.computedValue = result;
+            const targetSpan = rect.element.querySelector('.target-value');
+            if (targetSpan) targetSpan.innerText = result.toFixed(4);
+        }
     }
-    // Обновляем отображение связанных значений в блоках-приёмниках
+    
+    // Обновляем отображение связанных значений (для входов, которые отображают переданное значение)
     for (let rect of rectangles.values()) {
         for (let v of rect.vars) {
-            if (v === rect.targetVar)
-                continue;
+            if (v === rect.targetVar) continue;
             const conn = paramConnections.find(c => c.targetRectId === rect.id && c.targetParam === v);
             if (conn) {
                 const srcRect = rectangles.get(conn.sourceRectId);
@@ -649,6 +705,7 @@ function computeAll() {
             }
         }
     }
+    return true;
 }
 
 /**
@@ -1106,16 +1163,11 @@ function createCustomBlock(left, top, id = null, operation = '+', coeffValue = '
     return rectId;
 }
 
-/**
- * Создаёт блок с графиком на рабочем поле.
- * @param {Object} graphContext - { mode, analyticFn, startSpec, endSpec, xLabel, yLabel }
- * @returns {number} ID созданного блока
- */
 function createGraphBlock(graphContext) {
     const blockId = nextRectId++;
     const blockDiv = document.createElement('div');
     blockDiv.className = 'formula-card graph-card';
-    blockDiv.style.left = '100px';   // начальная позиция
+    blockDiv.style.left = '100px';
     blockDiv.style.top = '100px';
     blockDiv.style.width = '500px';
     blockDiv.style.height = '500px';
@@ -1126,7 +1178,7 @@ function createGraphBlock(graphContext) {
             <span>График ${graphContext.yLabel}(${graphContext.xLabel})</span>
             <div class="delete-card" style="cursor:pointer;">✕</div>
         </div>
-        <div class="graph-canvas-wrapper" overflow:hidden; position:relative;">
+        <div class="graph-canvas-wrapper" style="overflow:hidden; position:relative;">
             <canvas style="width:100%; height:100%; display:block;"></canvas>
         </div>
     `;
@@ -1136,16 +1188,29 @@ function createGraphBlock(graphContext) {
     const canvas = blockDiv.querySelector('canvas');
     const wrapper = blockDiv.querySelector('.graph-canvas-wrapper');
 
-    // Состояние масштаба (начальное)
+    // Генерируем точки один раз (но теперь быстро)
+    const pointsCount = 2000;
+    const xMin = -100, xMax = 100;
+    const points = [];
+    for (let i = 0; i <= pointsCount; i++) {
+        const x = xMin + (i / pointsCount) * (xMax - xMin);
+        let y;
+        try {
+            y = graphContext.evalFunction(x);
+        } catch (e) {
+            y = null;
+        }
+        points.push({ x, y: (y !== null && isFinite(y) && !isNaN(y)) ? y : null });
+    }
+
     const state = {
-        points: generateInitialPoints(graphContext, 2000),
-        xMin: -50,
-        xMax: 50,
-        yMin: -50,
-        yMax: 50
+        points: points,
+        xMin: -100,
+        xMax: 100,
+        yMin: -100,
+        yMax: 100
     };
 
-    // Сохраняем данные блока
     const blockData = {
         id: blockId,
         element: blockDiv,
@@ -1184,7 +1249,7 @@ function createGraphBlock(graphContext) {
 
     // Начало панорамирования (правая кнопка)
     canvas.addEventListener('mousedown', (e) => {
-        if (e.button === 1) // средняя кнопка
+        if (e.button === 0) // средняя кнопка
             e.preventDefault();
         else
             return;
@@ -1248,7 +1313,7 @@ function createGraphBlock(graphContext) {
 
     // Отпускание правой кнопки (где угодно)
     window.addEventListener('mouseup', (e) => {
-        if (e.button === 1) {
+        if (e.button === 0) {
             isPanning = false;
             e.preventDefault();
         }
@@ -1305,7 +1370,6 @@ function createGraphBlock(graphContext) {
     setTimeout(redraw, 20);
     return blockId;
 }
-
 
 /**
  * Обрабатывает клик по порту (входному или выходному) в режиме соединения.
@@ -1932,46 +1996,222 @@ function deactivateGraphMode() {
     graphBtn.classList.remove('active');
 }
 
-// Функция построения графика
-async function buildGraph(startSpec, endSpec) {
+/**
+ * Анализирует граф для построения графика между startSpec (X) и endSpec (Y).
+ * Возвращает объект:
+ *   - canCompute: boolean
+ *   - evalFunction: function(x) – быстро вычисляет Y по X (если canCompute true)
+ *   - errorMessage: строка с ошибкой
+ */
+function prepareGraphEvaluation(startSpec, endSpec) {
     const startRect = rectangles.get(startSpec.rectId);
     const endRect = rectangles.get(endSpec.rectId);
     if (!startRect || !endRect) {
-        alert("Ошибка: блок не найден");
-        return;
+        return { canCompute: false, errorMessage: "Один из блоков не найден" };
     }
-
-    if (!startRect.vars.includes(startSpec.paramName)) {
-        alert(`Параметр ${startSpec.paramName} не найден в блоке "${startRect.formulaName}"`);
-        return;
+    
+    // Найдём все блоки, которые могут влиять на Y, идя от Y назад по связям, пока не дойдём до X или до констант.
+    // Построим граф зависимостей в обратном направлении.
+    const reverseDeps = new Map(); // key: rectId, value: Set(rectId, от которых зависит данный блок)
+    for (let rect of rectangles.values()) {
+        reverseDeps.set(rect.id, new Set());
     }
-    if (!endRect.vars.includes(endSpec.paramName)) {
-        alert(`Параметр ${endSpec.paramName} не найден в блоке "${endRect.formulaName}"`);
-        return;
+    for (let conn of paramConnections) {
+        reverseDeps.get(conn.targetRectId).add(conn.sourceRectId);
     }
-
-    // Попытка аналитического вывода
-    let expr = deriveExpression(startSpec, endSpec);
-    let analyticMode = (expr !== null);
-    let fn = null;
-    if (analyticMode) {
-        try {
-            fn = new Function('x', `'use strict'; return (${expr});`);
-        } catch (e) {
-            console.warn("Ошибка создания функции, переходим в численный режим", e);
-            analyticMode = false;
+    
+    // BFS/DFS от endRect назад, собираем все блоки, которые могут быть нужны.
+    const neededBlocks = new Set();
+    const queue = [endRect.id];
+    const visited = new Set();
+    visited.add(endRect.id);
+    while (queue.length) {
+        const currId = queue.shift();
+        neededBlocks.add(currId);
+        const deps = reverseDeps.get(currId) || new Set();
+        for (let depId of deps) {
+            if (!visited.has(depId)) {
+                visited.add(depId);
+                queue.push(depId);
+            }
         }
     }
+    
+    // Если startRect.id не входит в neededBlocks, значит нет пути от X к Y.
+    if (!neededBlocks.has(startSpec.rectId)) {
+        return { canCompute: false, errorMessage: "Нет зависимости между выбранными параметрами." };
+    }
+    
+    // Теперь построим топологический порядок только для neededBlocks (подграф).
+    // Сначала создаём карту только для нужных блоков.
+    const subgraphOrder = [];
+    const subgraphInDegree = new Map();
+    const subgraphReverse = new Map(); // from src to list of tgt
+    for (let id of neededBlocks) {
+        subgraphInDegree.set(id, 0);
+        subgraphReverse.set(id, new Set());
+    }
+    for (let conn of paramConnections) {
+        if (neededBlocks.has(conn.sourceRectId) && neededBlocks.has(conn.targetRectId)) {
+            subgraphInDegree.set(conn.targetRectId, subgraphInDegree.get(conn.targetRectId) + 1);
+            subgraphReverse.get(conn.sourceRectId).add(conn.targetRectId);
+        }
+    }
+    const zeroQueue = [];
+    for (let id of neededBlocks) {
+        if (subgraphInDegree.get(id) === 0) zeroQueue.push(id);
+    }
+    while (zeroQueue.length) {
+        const curr = zeroQueue.shift();
+        subgraphOrder.push(curr);
+        for (let next of subgraphReverse.get(curr)) {
+            const newDeg = subgraphInDegree.get(next) - 1;
+            subgraphInDegree.set(next, newDeg);
+            if (newDeg === 0) zeroQueue.push(next);
+        }
+    }
+    if (subgraphOrder.length !== neededBlocks.size) {
+        return { canCompute: false, errorMessage: "Циклическая зависимость в подграфе графика." };
+    }
+    
+    // Теперь, зная порядок, создадим функцию, которая для заданного x подставляет x в startParam,
+    // а затем последовательно вычисляет все блоки подграфа, возвращая конечное значение Y.
+    // Чтобы не перестраивать каждый раз, создадим "компилятор" – массив инструкций.
+    // Каждая инструкция: { type, rectId, targetVar, inputs }
+    // Но для простоты создадим функцию, которая клонирует значения на каждый вызов.
+    // Это всё равно быстрее, чем полный пересчёт всех блоков.
+    
+    const evalFunction = (x) => {
+        // Временно запомним исходные значения для startRect.param и восстановим после вычисления
+        const originalStartManual = startRect.manualValues[startSpec.paramName];
+        const originalStartConn = paramConnections.find(c => c.targetRectId === startSpec.rectId && c.targetParam === startSpec.paramName);
+        let originalStartConnIdx = originalStartConn ? paramConnections.indexOf(originalStartConn) : -1;
+        
+        // Удалим связь, если она есть, и установим x вручную
+        if (originalStartConn) {
+            paramConnections.splice(originalStartConnIdx, 1);
+        }
+        startRect.manualValues[startSpec.paramName] = String(x);
+        
+        // Обновим список параметров у startRect, чтобы отразить изменение (но перерисовка не нужна)
+        // Для простоты перестраиваем интерфейс этого блока (но это дорого). Можно без перестройки, если обращаться напрямую.
+        // Но мы не будем перерисовывать весь UI, а вычислим значения.
+        
+        // Вычислим все блоки в подграфе в нужном порядке, используя текущие manualValues и computedValue
+        // Сбросим computedValue для блоков подграфа
+        const savedComputed = new Map();
+        for (let id of neededBlocks) {
+            const rect = rectangles.get(id);
+            savedComputed.set(id, rect.computedValue);
+            rect.computedValue = null;
+        }
+        
+        // Вычисляем последовательно
+        for (let id of subgraphOrder) {
+            const rect = rectangles.get(id);
+            if (!rect) continue;
+            // Собираем входные значения
+            let allOk = true;
+            const inputs = {};
+            for (let v of rect.vars) {
+                if (v === rect.targetVar) continue;
+                const conn = paramConnections.find(c => c.targetRectId === id && c.targetParam === v);
+                if (conn) {
+                    const srcRect = rectangles.get(conn.sourceRectId);
+                    if (srcRect && srcRect.computedValue !== null) {
+                        inputs[v] = srcRect.computedValue;
+                    } else {
+                        allOk = false;
+                        break;
+                    }
+                } else {
+                    const manual = rect.manualValues[v];
+                    if (manual !== undefined && manual.trim() !== '' && !isNaN(parseFloat(manual))) {
+                        inputs[v] = parseFloat(manual);
+                    } else {
+                        allOk = false;
+                        break;
+                    }
+                }
+            }
+            if (!allOk) continue;
+            let result = null;
+            if (rect.isCustom) {
+                const inVal = inputs.in;
+                const coeffVal = rect.manualValues.coeff !== undefined && rect.manualValues.coeff.trim() !== '' ? parseFloat(rect.manualValues.coeff) : NaN;
+                if (!isNaN(inVal) && !isNaN(coeffVal)) {
+                    switch (rect.operation) {
+                        case '+': result = inVal + coeffVal; break;
+                        case '-': result = inVal - coeffVal; break;
+                        case '*': result = inVal * coeffVal; break;
+                        case '/': result = coeffVal !== 0 ? inVal / coeffVal : NaN; break;
+                    }
+                }
+            } else {
+                result = solveEquation(rect.formulaEq, rect.vars, inputs, rect.targetVar);
+            }
+            if (result !== null && isFinite(result)) {
+                rect.computedValue = result;
+            }
+        }
+        
+        // Получим значение Y
+        let y = null;
+        if (endSpec.isOutput) {
+            const endRectObj = rectangles.get(endSpec.rectId);
+            y = endRectObj.computedValue;
+        } else {
+            // Y – входной параметр блока
+            const conn = paramConnections.find(c => c.targetRectId === endSpec.rectId && c.targetParam === endSpec.paramName);
+            if (conn) {
+                const srcRect = rectangles.get(conn.sourceRectId);
+                y = srcRect ? srcRect.computedValue : null;
+            } else {
+                const manual = rectangles.get(endSpec.rectId).manualValues[endSpec.paramName];
+                if (manual !== undefined && manual.trim() !== '' && !isNaN(parseFloat(manual))) {
+                    y = parseFloat(manual);
+                }
+            }
+        }
+        
+        // Восстановление состояния
+        if (originalStartConn) {
+            paramConnections.push(originalStartConn);
+        } else {
+            if (originalStartManual === undefined) {
+                delete startRect.manualValues[startSpec.paramName];
+            } else {
+                startRect.manualValues[startSpec.paramName] = originalStartManual;
+            }
+        }
+        // Восстановить computedValue всех блоков подграфа
+        for (let id of neededBlocks) {
+            const rect = rectangles.get(id);
+            rect.computedValue = savedComputed.get(id);
+        }
+        // Обновим отображение, если нужно (не обязательно для графика)
+        return (y !== null && isFinite(y)) ? y : null;
+    };
+    
+    return { canCompute: true, evalFunction: evalFunction };
+}
 
+async function buildGraph(startSpec, endSpec) {
+    const preparation = prepareGraphEvaluation(startSpec, endSpec);
+    if (!preparation.canCompute) {
+        alert(preparation.errorMessage);
+        return;
+    }
+    
+    // Создаём блок графика, передавая ему не аналитическую функцию, а численный вычислитель
     const graphContext = {
-        mode: analyticMode ? 'analytic' : 'numeric',
-        analyticFn: fn,
+        mode: 'numeric',
+        evalFunction: preparation.evalFunction,
         startSpec: startSpec,
         endSpec: endSpec,
         xLabel: startSpec.paramName,
         yLabel: endSpec.paramName,
     };
-
     createGraphBlock(graphContext);
 }
 
@@ -2369,13 +2609,10 @@ connModeBtn.addEventListener('click', () => setConnectMode(!connectModeActive));
 helpBtn.addEventListener('click', () => showHelp() );
 graphBtn.addEventListener('click', () => {
     if (graphModeActive) {
-        // Если режим уже активен – выключаем
         deactivateGraphMode();
         return;
     }
-    // Выходим из режима соединения, если он активен
     if (connectModeActive) setConnectMode(false);
-    // Активируем режим выбора графика
     graphModeActive = true;
     selectingStart = true;
     selectingEnd = false;
@@ -2397,6 +2634,9 @@ clearAllBtn.addEventListener('click', () => {
     for (let rect of rectangles.values()){
         rebuildParamsList(rect);
         deleteRectangle(rect.id);
+    }
+    for (let block of graphBlocks.values()){
+        deleteGraphBlock(block.id);
     }
     updateParamConnectionsList();
     redrawParamLines();
