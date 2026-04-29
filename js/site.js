@@ -2245,6 +2245,70 @@ function generateInitialPoints(graphContext, pointsCount = 100) {
 }
 
 /**
+ * Определяет коды для алгоритма Коэна-Сазерленда.
+ */
+function computeOutCode(x, y, rect) {
+    let code = 0;
+    if (x < rect.x) code |= 1;      // left
+    if (x > rect.x + rect.w) code |= 2; // right
+    if (y < rect.y) code |= 4;      // top
+    if (y > rect.y + rect.h) code |= 8; // bottom
+    return code;
+}
+
+/**
+ * Отсекает отрезок (x1,y1)-(x2,y2) по прямоугольнику rect.
+ * Возвращает { x1, y1, x2, y2 } если отрезок пересекает прямоугольник,
+ * иначе null.
+ */
+function clipSegment(x1, y1, x2, y2, rect) {
+    let out1 = computeOutCode(x1, y1, rect);
+    let out2 = computeOutCode(x2, y2, rect);
+    let accept = false;
+
+    while (true) {
+        if ((out1 | out2) === 0) {
+            accept = true;
+            break;
+        }
+        if (out1 & out2) {
+            break;
+        }
+        // Выбираем точку, которая находится снаружи
+        const out = out1 !== 0 ? out1 : out2;
+        let x, y;
+
+        // Пересечение с границей
+        if (out & 1) { // left
+            x = rect.x;
+            y = y1 + (y2 - y1) * (rect.x - x1) / (x2 - x1);
+        } else if (out & 2) { // right
+            x = rect.x + rect.w;
+            y = y1 + (y2 - y1) * (rect.x + rect.w - x1) / (x2 - x1);
+        } else if (out & 4) { // top
+            y = rect.y;
+            x = x1 + (x2 - x1) * (rect.y - y1) / (y2 - y1);
+        } else if (out & 8) { // bottom
+            y = rect.y + rect.h;
+            x = x1 + (x2 - x1) * (rect.y + rect.h - y1) / (y2 - y1);
+        }
+
+        if (out === out1) {
+            x1 = x; y1 = y;
+            out1 = computeOutCode(x1, y1, rect);
+        } else {
+            x2 = x; y2 = y;
+            out2 = computeOutCode(x2, y2, rect);
+        }
+    }
+
+    if (accept) {
+        return { x1, y1, x2, y2 };
+    }
+    return null;
+}
+
+/**
  * Отрисовка графика внутри готового блока (с учётом текущего масштаба).
  * @param {Object} blockData - объект блока из graphBlocks
  */
@@ -2259,13 +2323,16 @@ function drawGraphInBlock(blockData) {
     const graphWidth = width - padding.left - padding.right;
     const graphHeight = height - padding.top - padding.bottom;
 
+    // Прямоугольник области отрисовки графика (в координатах canvas)
+    const clipRect = { x: padding.left, y: padding.top, w: graphWidth, h: graphHeight };
+
     const xToPixel = (x) => padding.left + ((x - xMin) / (xMax - xMin)) * graphWidth;
     const yToPixel = (y) => padding.top + graphHeight - ((y - yMin) / (yMax - yMin)) * graphHeight;
 
     ctx.clearRect(0, 0, width, height);
     ctx.save();
 
-    // Сетка
+    // ---- Отрисовка сетки и осей (без изменений) ----
     ctx.font = '10px monospace';
     ctx.fillStyle = '#555';
     ctx.strokeStyle = '#ddd';
@@ -2308,7 +2375,6 @@ function drawGraphInBlock(blockData) {
         ctx.fillText(y.toFixed(2), padding.left - 30, py + 3);
     }
 
-    // Оси
     ctx.beginPath();
     ctx.strokeStyle = '#333';
     ctx.lineWidth = 2;
@@ -2334,38 +2400,36 @@ function drawGraphInBlock(blockData) {
         ctx.lineTo(padding.left + graphWidth - 8, yZero);
         ctx.fill();
     }
-
-    // Подписи осей
     ctx.font = '12px "Segoe UI"';
     ctx.fillStyle = '#2c3e50';
     ctx.fillText(graphContext.xLabel, padding.left + graphWidth + 5, yToPixel(0) + 4);
     ctx.fillText(graphContext.yLabel, xToPixel(0) - 6, padding.top - 5);
 
-    // Кривая
+    // ---- Отрисовка кривой с отсечением по clipRect ----
     ctx.beginPath();
     ctx.strokeStyle = '#f97316';
     ctx.lineWidth = 2;
-    let firstPoint = true;
-    for (const p of points) {
-        if (p.y === null) {
-            firstPoint = true;
-            continue;
-        }
-        const px = xToPixel(p.x);
-        const py = yToPixel(p.y);
-        if (px < padding.left || px > padding.left + graphWidth ||
-            py < padding.top || py > padding.top + graphHeight) {
-            firstPoint = true;
-            continue;
-        }
-        if (firstPoint) {
-            ctx.moveTo(px, py);
-            firstPoint = false;
-        } else {
-            ctx.lineTo(px, py);
+
+    // Проходим по точкам, соединяя соседние валидные точки
+    for (let i = 0; i < points.length - 1; i++) {
+        const p1 = points[i];
+        const p2 = points[i+1];
+        if (p1.y === null || p2.y === null) continue;
+
+        const px1 = xToPixel(p1.x);
+        const py1 = yToPixel(p1.y);
+        const px2 = xToPixel(p2.x);
+        const py2 = yToPixel(p2.y);
+
+        const clipped = clipSegment(px1, py1, px2, py2, clipRect);
+        if (clipped) {
+            ctx.beginPath();
+            ctx.moveTo(clipped.x1, clipped.y1);
+            ctx.lineTo(clipped.x2, clipped.y2);
+            ctx.stroke();
         }
     }
-    ctx.stroke();
+
     ctx.restore();
 }
 
