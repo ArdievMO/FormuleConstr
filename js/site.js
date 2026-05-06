@@ -1,11 +1,10 @@
 ﻿//--- БАЗА ФОРМУЛ ---
 const formulasLibrary = [
     // ==================== Дополнительно ====================
-    { name: "Арифметический оператор", eq: "out = in + coeff", vars: ["out", "in", "coeff"], category: "Дополнительно" },
-    { name: "Арифметический оператор", eq: "out = in - coeff", vars: ["out", "in", "coeff"], category: "Дополнительно" },
-    { name: "Арифметический оператор", eq: "out = in * coeff", vars: ["out", "in", "coeff"], category: "Дополнительно" },
-    { name: "Арифметический оператор", eq: "out = in / coeff", vars: ["out", "in", "coeff"], category: "Дополнительно" },
-
+    { name: "Сложение",  eq: "out = in1 + in2", vars: ["out", "in1", "in2"], category: "Дополнительно" },
+    { name: "Вычитание", eq: "out = in1 - in2", vars: ["out", "in1", "in2"], category: "Дополнительно" },
+    { name: "Умножение", eq: "out = in1 * in2", vars: ["out", "in1", "in2"], category: "Дополнительно" },
+    { name: "Деление",   eq: "out = in1 / in2", vars: ["out", "in1", "in2"], category: "Дополнительно" },
 
     // ==================== МЕХАНИКА ====================
     { name: "Давление", eq: "P = F/S", vars: ["P", "F", "S"], category: "Механика" },
@@ -155,646 +154,650 @@ function solveQuadratic(a, b, c, rootSign = 1) {
     return (rootSign === 1) ? Math.max(x1, x2) : Math.min(x1, x2);
 }
 
+
+//Регистрация вариантов использования функций. Переключение происходит по смене выходного параметра
 {
 
-// ---------- Механика ----------
-registerFormulaSolver("P = F/S", "P", (known) => known.F / known.S);
-registerFormulaSolver("P = F/S", "F", (known) => known.P * known.S);
-registerFormulaSolver("P = F/S", "S", (known) => known.F / known.P);
-
-registerFormulaSolver("ρ = m/V", "ρ", (known) => known.m / known.V);
-registerFormulaSolver("ρ = m/V", "m", (known) => known.ρ * known.V);
-registerFormulaSolver("ρ = m/V", "V", (known) => known.m / known.ρ);
-
-registerFormulaSolver("P = ρ*g*h", "P", (known) => known.ρ * known.g * known.h);
-registerFormulaSolver("P = ρ*g*h", "ρ", (known) => known.P / (known.g * known.h));
-registerFormulaSolver("P = ρ*g*h", "g", (known) => known.P / (known.ρ * known.h));
-registerFormulaSolver("P = ρ*g*h", "h", (known) => known.P / (known.ρ * known.g));
-
-registerFormulaSolver("Fт = m*g", "Fт", (known) => known.m * known.g);
-registerFormulaSolver("Fт = m*g", "m", (known) => known.Fт / known.g);
-registerFormulaSolver("Fт = m*g", "g", (known) => known.Fт / known.m);
-
-registerFormulaSolver("Fₐ = ρж*g*Vт", "Fₐ", (known) => known.ρж * known.g * known.Vт);
-registerFormulaSolver("Fₐ = ρж*g*Vт", "ρж", (known) => known.Fₐ / (known.g * known.Vт));
-registerFormulaSolver("Fₐ = ρж*g*Vт", "g", (known) => known.Fₐ / (known.ρж * known.Vт));
-registerFormulaSolver("Fₐ = ρж*g*Vт", "Vт", (known) => known.Fₐ / (known.ρж * known.g));
-
-registerFormulaSolver("F = m*a", "F", (known) => known.m * known.a);
-registerFormulaSolver("F = m*a", "m", (known) => known.F / known.a);
-registerFormulaSolver("F = m*a", "a", (known) => known.F / known.m);
-
-registerFormulaSolver("Fy = -k*x", "Fy", (known) => -known.k * known.x);
-registerFormulaSolver("Fy = -k*x", "k", (known) => -known.Fy / known.x);
-registerFormulaSolver("Fy = -k*x", "x", (known) => -known.Fy / known.k);
-
-registerFormulaSolver("Ek = m*υ^2/2", "Ek", (known) => known.m * Math.pow(known.υ, 2) / 2);
-registerFormulaSolver("Ek = m*υ^2/2", "m", (known) => 2 * known.Ek / Math.pow(known.υ, 2));
-registerFormulaSolver("Ek = m*υ^2/2", "υ", (known) => Math.sqrt(2 * known.Ek / known.m) * (known.rootSign || 1));
-
-registerFormulaSolver("A = F*S*cos(α)", "A", (known) => known.F * known.S * Math.cos(known.α));
-registerFormulaSolver("A = F*S*cos(α)", "F", (known) => known.A / (known.S * Math.cos(known.α)));
-registerFormulaSolver("A = F*S*cos(α)", "S", (known) => known.A / (known.F * Math.cos(known.α)));
-registerFormulaSolver("A = F*S*cos(α)", "α", (known) => Math.acos(known.A / (known.F * known.S)));
-
-registerFormulaSolver("N = A/t", "N", (known) => known.A / known.t);
-registerFormulaSolver("N = A/t", "A", (known) => known.N * known.t);
-registerFormulaSolver("N = A/t", "t", (known) => known.A / known.N);
-
-// X = X0 + υ0*t + (a*t^2)/2
-registerFormulaSolver("X = X0 + υ0*t + (a*t^2)/2", "X", (known) => known.X0 + known.υ0 * known.t + known.a * Math.pow(known.t, 2) / 2);
-registerFormulaSolver("X = X0 + υ0*t + (a*t^2)/2", "X0", (known) => known.X - known.υ0 * known.t - known.a * Math.pow(known.t, 2) / 2);
-registerFormulaSolver("X = X0 + υ0*t + (a*t^2)/2", "υ0", (known) => (known.X - known.X0 - known.a * Math.pow(known.t, 2) / 2) / known.t);
-registerFormulaSolver("X = X0 + υ0*t + (a*t^2)/2", "t", (known) => {
-    const a2 = known.a / 2;
-    const b = known.υ0;
-    const c = known.X0 - known.X;
-    return solveQuadratic(a2, b, c, known.rootSign);
-});
-registerFormulaSolver("X = X0 + υ0*t + (a*t^2)/2", "a", (known) => 2 * (known.X - known.X0 - known.υ0 * known.t) / Math.pow(known.t, 2));
-
-// S = (υ2^2 - υ0^2)/(2*a)
-registerFormulaSolver("S = (υ2^2 - υ0^2)/(2*a)", "S", (known) => (Math.pow(known.υ2, 2) - Math.pow(known.υ0, 2)) / (2 * known.a));
-registerFormulaSolver("S = (υ2^2 - υ0^2)/(2*a)", "υ2", (known) => Math.sqrt(2 * known.a * known.S + Math.pow(known.υ0, 2)) * (known.rootSign || 1));
-registerFormulaSolver("S = (υ2^2 - υ0^2)/(2*a)", "υ0", (known) => Math.sqrt(Math.pow(known.υ2, 2) - 2 * known.a * known.S) * (known.rootSign || 1));
-registerFormulaSolver("S = (υ2^2 - υ0^2)/(2*a)", "a", (known) => (Math.pow(known.υ2, 2) - Math.pow(known.υ0, 2)) / (2 * known.S));
-
-// S = (υ + υ0)*t/2
-registerFormulaSolver("S = (υ + υ0)*t/2", "S", (known) => (known.υ + known.υ0) * known.t / 2);
-registerFormulaSolver("S = (υ + υ0)*t/2", "υ", (known) => 2 * known.S / known.t - known.υ0);
-registerFormulaSolver("S = (υ + υ0)*t/2", "υ0", (known) => 2 * known.S / known.t - known.υ);
-registerFormulaSolver("S = (υ + υ0)*t/2", "t", (known) => 2 * known.S / (known.υ + known.υ0));
-
-// υ = υ0 + a*t
-registerFormulaSolver("υ = υ0 + a*t", "υ", (known) => known.υ0 + known.a * known.t);
-registerFormulaSolver("υ = υ0 + a*t", "υ0", (known) => known.υ - known.a * known.t);
-registerFormulaSolver("υ = υ0 + a*t", "a", (known) => (known.υ - known.υ0) / known.t);
-registerFormulaSolver("υ = υ0 + a*t", "t", (known) => (known.υ - known.υ0) / known.a);
-
-// a = (υ - υ0)/t
-registerFormulaSolver("a = (υ - υ0)/t", "a", (known) => (known.υ - known.υ0) / known.t);
-registerFormulaSolver("a = (υ - υ0)/t", "υ", (known) => known.a * known.t + known.υ0);
-registerFormulaSolver("a = (υ - υ0)/t", "υ0", (known) => known.υ - known.a * known.t);
-registerFormulaSolver("a = (υ - υ0)/t", "t", (known) => (known.υ - known.υ0) / known.a);
-
-// υ = 2*π*R/T
-registerFormulaSolver("υ = 2*π*R/T", "υ", (known) => 2 * Math.PI * known.R / known.T);
-registerFormulaSolver("υ = 2*π*R/T", "R", (known) => known.υ * known.T / (2 * Math.PI));
-registerFormulaSolver("υ = 2*π*R/T", "T", (known) => 2 * Math.PI * known.R / known.υ);
-
-// a = υ^2/R
-registerFormulaSolver("a = υ^2/R", "a", (known) => Math.pow(known.υ, 2) / known.R);
-registerFormulaSolver("a = υ^2/R", "υ", (known) => Math.sqrt(known.a * known.R) * (known.rootSign || 1));
-registerFormulaSolver("a = υ^2/R", "R", (known) => Math.pow(known.υ, 2) / known.a);
-
-// ν = 1/T
-registerFormulaSolver("ν = 1/T", "ν", (known) => 1 / known.T);
-registerFormulaSolver("ν = 1/T", "T", (known) => 1 / known.ν);
-
-// ν = ω/(2*π)
-registerFormulaSolver("ν = ω/(2*π)", "ν", (known) => known.ω / (2 * Math.PI));
-registerFormulaSolver("ν = ω/(2*π)", "ω", (known) => known.ν * 2 * Math.PI);
-
-// ω = 2*π*ν
-registerFormulaSolver("ω = 2*π*ν", "ω", (known) => 2 * Math.PI * known.ν);
-registerFormulaSolver("ω = 2*π*ν", "ν", (known) => known.ω / (2 * Math.PI));
-
-// F = G*M*m/R^2
-registerFormulaSolver("F = G*M*m/R^2", "F", (known) => known.G * known.M * known.m / Math.pow(known.R, 2));
-registerFormulaSolver("F = G*M*m/R^2", "G", (known) => known.F * Math.pow(known.R, 2) / (known.M * known.m));
-registerFormulaSolver("F = G*M*m/R^2", "M", (known) => known.F * Math.pow(known.R, 2) / (known.G * known.m));
-registerFormulaSolver("F = G*M*m/R^2", "m", (known) => known.F * Math.pow(known.R, 2) / (known.G * known.M));
-registerFormulaSolver("F = G*M*m/R^2", "R", (known) => Math.sqrt(known.G * known.M * known.m / known.F) * (known.rootSign || 1));
-
-// P = m*(g + a)
-registerFormulaSolver("P = m*(g + a)", "P", (known) => known.m * (known.g + known.a));
-registerFormulaSolver("P = m*(g + a)", "m", (known) => known.P / (known.g + known.a));
-registerFormulaSolver("P = m*(g + a)", "g", (known) => known.P / known.m - known.a);
-registerFormulaSolver("P = m*(g + a)", "a", (known) => known.P / known.m - known.g);
-
-// P = m*(g - a)
-registerFormulaSolver("P = m*(g - a)", "P", (known) => known.m * (known.g - known.a));
-registerFormulaSolver("P = m*(g - a)", "m", (known) => known.P / (known.g - known.a));
-registerFormulaSolver("P = m*(g - a)", "g", (known) => known.P / known.m + known.a);
-registerFormulaSolver("P = m*(g - a)", "a", (known) => known.g - known.P / known.m);
-
-// Fтр = μ*N
-registerFormulaSolver("Fтр = μ*N", "Fтр", (known) => known.μ * known.N);
-registerFormulaSolver("Fтр = μ*N", "μ", (known) => known.Fтр / known.N);
-registerFormulaSolver("Fтр = μ*N", "N", (known) => known.Fтр / known.μ);
-
-// p = m*υ
-registerFormulaSolver("p = m*υ", "p", (known) => known.m * known.υ);
-registerFormulaSolver("p = m*υ", "m", (known) => known.p / known.υ);
-registerFormulaSolver("p = m*υ", "υ", (known) => known.p / known.m);
-
-// Δp = F*t
-registerFormulaSolver("Δp = F*t", "Δp", (known) => known.F * known.t);
-registerFormulaSolver("Δp = F*t", "F", (known) => known.Δp / known.t);
-registerFormulaSolver("Δp = F*t", "t", (known) => known.Δp / known.F);
-
-// M = F*ℓ
-registerFormulaSolver("M = F*ℓ", "M", (known) => known.F * known.ℓ);
-registerFormulaSolver("M = F*ℓ", "F", (known) => known.M / known.ℓ);
-registerFormulaSolver("M = F*ℓ", "ℓ", (known) => known.M / known.F);
-
-// Eп = m*g*h
-registerFormulaSolver("Eп = m*g*h", "Eп", (known) => known.m * known.g * known.h);
-registerFormulaSolver("Eп = m*g*h", "m", (known) => known.Eп / (known.g * known.h));
-registerFormulaSolver("Eп = m*g*h", "g", (known) => known.Eп / (known.m * known.h));
-registerFormulaSolver("Eп = m*g*h", "h", (known) => known.Eп / (known.m * known.g));
-
-// Eп = k*x^2/2
-registerFormulaSolver("Eп = k*x^2/2", "Eп", (known) => known.k * Math.pow(known.x, 2) / 2);
-registerFormulaSolver("Eп = k*x^2/2", "k", (known) => 2 * known.Eп / Math.pow(known.x, 2));
-registerFormulaSolver("Eп = k*x^2/2", "x", (known) => Math.sqrt(2 * known.Eп / known.k) * (known.rootSign || 1));
-
-// N = F*υ
-registerFormulaSolver("N = F*υ", "N", (known) => known.F * known.υ);
-registerFormulaSolver("N = F*υ", "F", (known) => known.N / known.υ);
-registerFormulaSolver("N = F*υ", "υ", (known) => known.N / known.F);
-
-// η = Aп/Aз
-registerFormulaSolver("η = Aп/Aз", "η", (known) => known.Aп / known.Aз);
-registerFormulaSolver("η = Aп/Aз", "Aп", (known) => known.η * known.Aз);
-registerFormulaSolver("η = Aп/Aз", "Aз", (known) => known.Aп / known.η);
-
-// ---------- Молекулярная физика ----------
-// ν = N/Na
-registerFormulaSolver("ν = N/Na", "ν", (known) => known.N / known.Na);
-registerFormulaSolver("ν = N/Na", "N", (known) => known.ν * known.Na);
-registerFormulaSolver("ν = N/Na", "Na", (known) => known.N / known.ν);
-
-// M = m/ν
-registerFormulaSolver("M = m/ν", "M", (known) => known.m / known.ν);
-registerFormulaSolver("M = m/ν", "m", (known) => known.M * known.ν);
-registerFormulaSolver("M = m/ν", "ν", (known) => known.m / known.M);
-
-// Ek = (3/2)*k*T
-registerFormulaSolver("Ek = (3/2)*k*T", "Ek", (known) => 1.5 * known.k * known.T);
-registerFormulaSolver("Ek = (3/2)*k*T", "k", (known) => known.Ek / (1.5 * known.T));
-registerFormulaSolver("Ek = (3/2)*k*T", "T", (known) => known.Ek / (1.5 * known.k));
-
-// P = n*k*T
-registerFormulaSolver("P = n*k*T", "P", (known) => known.n * known.k * known.T);
-registerFormulaSolver("P = n*k*T", "n", (known) => known.P / (known.k * known.T));
-registerFormulaSolver("P = n*k*T", "k", (known) => known.P / (known.n * known.T));
-registerFormulaSolver("P = n*k*T", "T", (known) => known.P / (known.n * known.k));
-
-// P = (1/3)*n*m0*υ^2
-registerFormulaSolver("P = (1/3)*n*m0*υ^2", "P", (known) => known.n * known.m0 * Math.pow(known.υ, 2) / 3);
-registerFormulaSolver("P = (1/3)*n*m0*υ^2", "n", (known) => 3 * known.P / (known.m0 * Math.pow(known.υ, 2)));
-registerFormulaSolver("P = (1/3)*n*m0*υ^2", "m0", (known) => 3 * known.P / (known.n * Math.pow(known.υ, 2)));
-registerFormulaSolver("P = (1/3)*n*m0*υ^2", "υ", (known) => Math.sqrt(3 * known.P / (known.n * known.m0)) * (known.rootSign || 1));
-
-// V2 = V1*T2/T1
-registerFormulaSolver("V2 = V1*T2/T1", "V2", (known) => known.V1 * known.T2 / known.T1);
-registerFormulaSolver("V2 = V1*T2/T1", "V1", (known) => known.V2 * known.T1 / known.T2);
-registerFormulaSolver("V2 = V1*T2/T1", "T2", (known) => known.V2 * known.T1 / known.V1);
-registerFormulaSolver("V2 = V1*T2/T1", "T1", (known) => known.V1 * known.T2 / known.V2);
-
-// P2 = P1*T2/T1
-registerFormulaSolver("P2 = P1*T2/T1", "P2", (known) => known.P1 * known.T2 / known.T1);
-registerFormulaSolver("P2 = P1*T2/T1", "P1", (known) => known.P2 * known.T1 / known.T2);
-registerFormulaSolver("P2 = P1*T2/T1", "T2", (known) => known.P2 * known.T1 / known.P1);
-registerFormulaSolver("P2 = P1*T2/T1", "T1", (known) => known.P1 * known.T2 / known.P2);
-
-// φ = P/P0
-registerFormulaSolver("φ = P/P0", "φ", (known) => known.P / known.P0);
-registerFormulaSolver("φ = P/P0", "P", (known) => known.φ * known.P0);
-registerFormulaSolver("φ = P/P0", "P0", (known) => known.P / known.φ);
-
-// U = (3/2)*(M/µ)*R*T
-registerFormulaSolver("U = (3/2)*(M/µ)*R*T", "U", (known) => 1.5 * (known.M / known.µ) * known.R * known.T);
-registerFormulaSolver("U = (3/2)*(M/µ)*R*T", "M", (known) => (known.U * known.µ) / (1.5 * known.R * known.T));
-registerFormulaSolver("U = (3/2)*(M/µ)*R*T", "µ", (known) => (1.5 * known.M * known.R * known.T) / known.U);
-registerFormulaSolver("U = (3/2)*(M/µ)*R*T", "R", (known) => (known.U * known.µ) / (1.5 * known.M * known.T));
-registerFormulaSolver("U = (3/2)*(M/µ)*R*T", "T", (known) => (known.U * known.µ) / (1.5 * known.M * known.R));
-
-// A = P*ΔV
-registerFormulaSolver("A = P*ΔV", "A", (known) => known.P * known.ΔV);
-registerFormulaSolver("A = P*ΔV", "P", (known) => known.A / known.ΔV);
-registerFormulaSolver("A = P*ΔV", "ΔV", (known) => known.A / known.P);
-
-// P2 = P1*V1/V2
-registerFormulaSolver("P2 = P1*V1/V2", "P2", (known) => known.P1 * known.V1 / known.V2);
-registerFormulaSolver("P2 = P1*V1/V2", "P1", (known) => known.P2 * known.V2 / known.V1);
-registerFormulaSolver("P2 = P1*V1/V2", "V1", (known) => known.P2 * known.V2 / known.P1);
-registerFormulaSolver("P2 = P1*V1/V2", "V2", (known) => known.P1 * known.V1 / known.P2);
-
-// Q = C*m*(T2 - T1)
-registerFormulaSolver("Q = C*m*(T2 - T1)", "Q", (known) => known.C * known.m * (known.T2 - known.T1));
-registerFormulaSolver("Q = C*m*(T2 - T1)", "C", (known) => known.Q / (known.m * (known.T2 - known.T1)));
-registerFormulaSolver("Q = C*m*(T2 - T1)", "m", (known) => known.Q / (known.C * (known.T2 - known.T1)));
-registerFormulaSolver("Q = C*m*(T2 - T1)", "T2", (known) => known.T1 + known.Q / (known.C * known.m));
-registerFormulaSolver("Q = C*m*(T2 - T1)", "T1", (known) => known.T2 - known.Q / (known.C * known.m));
-
-// Q = λ*m
-registerFormulaSolver("Q = λ*m", "Q", (known) => known.λ * known.m);
-registerFormulaSolver("Q = λ*m", "λ", (known) => known.Q / known.m);
-registerFormulaSolver("Q = λ*m", "m", (known) => known.Q / known.λ);
-
-// Q = L*m
-registerFormulaSolver("Q = L*m", "Q", (known) => known.L * known.m);
-registerFormulaSolver("Q = L*m", "L", (known) => known.Q / known.m);
-registerFormulaSolver("Q = L*m", "m", (known) => known.Q / known.L);
-
-// Q = q*m
-registerFormulaSolver("Q = q*m", "Q", (known) => known.q * known.m);
-registerFormulaSolver("Q = q*m", "q", (known) => known.Q / known.m);
-registerFormulaSolver("Q = q*m", "m", (known) => known.Q / known.q);
-
-// P*V = (m/M)*R*T
-registerFormulaSolver("P*V = (m/M)*R*T", "P", (known) => (known.m / known.M) * known.R * known.T / known.V);
-registerFormulaSolver("P*V = (m/M)*R*T", "V", (known) => (known.m / known.M) * known.R * known.T / known.P);
-registerFormulaSolver("P*V = (m/M)*R*T", "m", (known) => known.P * known.V * known.M / (known.R * known.T));
-registerFormulaSolver("P*V = (m/M)*R*T", "M", (known) => known.m * known.R * known.T / (known.P * known.V));
-registerFormulaSolver("P*V = (m/M)*R*T", "R", (known) => known.P * known.V * known.M / (known.m * known.T));
-registerFormulaSolver("P*V = (m/M)*R*T", "T", (known) => known.P * known.V * known.M / (known.m * known.R));
-
-// ΔU = A + Q
-registerFormulaSolver("ΔU = A + Q", "ΔU", (known) => known.A + known.Q);
-registerFormulaSolver("ΔU = A + Q", "A", (known) => known.ΔU - known.Q);
-registerFormulaSolver("ΔU = A + Q", "Q", (known) => known.ΔU - known.A);
-
-// η = (Q1 - Q2)/Q1
-registerFormulaSolver("η = (Q1 - Q2)/Q1", "η", (known) => (known.Q1 - known.Q2) / known.Q1);
-registerFormulaSolver("η = (Q1 - Q2)/Q1", "Q1", (known) => known.Q2 / (1 - known.η));
-registerFormulaSolver("η = (Q1 - Q2)/Q1", "Q2", (known) => known.Q1 * (1 - known.η));
-
-// η = (T1 - T2)/T1
-registerFormulaSolver("η = (T1 - T2)/T1", "η", (known) => (known.T1 - known.T2) / known.T1);
-registerFormulaSolver("η = (T1 - T2)/T1", "T1", (known) => known.T2 / (1 - known.η));
-registerFormulaSolver("η = (T1 - T2)/T1", "T2", (known) => known.T1 * (1 - known.η));
-
-// ---------- Электродинамика ----------
-// I = U/R
-registerFormulaSolver("I = U/R", "I", (known) => known.U / known.R);
-registerFormulaSolver("I = U/R", "U", (known) => known.I * known.R);
-registerFormulaSolver("I = U/R", "R", (known) => known.U / known.I);
-
-// F = k*q1*q2/R^2
-registerFormulaSolver("F = k*q1*q2/R^2", "F", (known) => known.k * known.q1 * known.q2 / Math.pow(known.R, 2));
-registerFormulaSolver("F = k*q1*q2/R^2", "k", (known) => known.F * Math.pow(known.R, 2) / (known.q1 * known.q2));
-registerFormulaSolver("F = k*q1*q2/R^2", "q1", (known) => known.F * Math.pow(known.R, 2) / (known.k * known.q2));
-registerFormulaSolver("F = k*q1*q2/R^2", "q2", (known) => known.F * Math.pow(known.R, 2) / (known.k * known.q1));
-registerFormulaSolver("F = k*q1*q2/R^2", "R", (known) => Math.sqrt(known.k * known.q1 * known.q2 / known.F) * (known.rootSign || 1));
-
-// E = F/q
-registerFormulaSolver("E = F/q", "E", (known) => known.F / known.q);
-registerFormulaSolver("E = F/q", "F", (known) => known.E * known.q);
-registerFormulaSolver("E = F/q", "q", (known) => known.F / known.E);
-
-// E = k*q/R^2
-registerFormulaSolver("E = k*q/R^2", "E", (known) => known.k * known.q / Math.pow(known.R, 2));
-registerFormulaSolver("E = k*q/R^2", "k", (known) => known.E * Math.pow(known.R, 2) / known.q);
-registerFormulaSolver("E = k*q/R^2", "q", (known) => known.E * Math.pow(known.R, 2) / known.k);
-registerFormulaSolver("E = k*q/R^2", "R", (known) => Math.sqrt(known.k * known.q / known.E) * (known.rootSign || 1));
-
-// σ = q/S
-registerFormulaSolver("σ = q/S", "σ", (known) => known.q / known.S);
-registerFormulaSolver("σ = q/S", "q", (known) => known.σ * known.S);
-registerFormulaSolver("σ = q/S", "S", (known) => known.q / known.σ);
-
-// E = 2*π*k*σ
-registerFormulaSolver("E = 2*π*k*σ", "E", (known) => 2 * Math.PI * known.k * known.σ);
-registerFormulaSolver("E = 2*π*k*σ", "k", (known) => known.E / (2 * Math.PI * known.σ));
-registerFormulaSolver("E = 2*π*k*σ", "σ", (known) => known.E / (2 * Math.PI * known.k));
-
-// ε = E0/E
-registerFormulaSolver("ε = E0/E", "ε", (known) => known.E0 / known.E);
-registerFormulaSolver("ε = E0/E", "E0", (known) => known.ε * known.E);
-registerFormulaSolver("ε = E0/E", "E", (known) => known.E0 / known.ε);
-
-// W = k*q1*q2/R
-registerFormulaSolver("W = k*q1*q2/R", "W", (known) => known.k * known.q1 * known.q2 / known.R);
-registerFormulaSolver("W = k*q1*q2/R", "k", (known) => known.W * known.R / (known.q1 * known.q2));
-registerFormulaSolver("W = k*q1*q2/R", "q1", (known) => known.W * known.R / (known.k * known.q2));
-registerFormulaSolver("W = k*q1*q2/R", "q2", (known) => known.W * known.R / (known.k * known.q1));
-registerFormulaSolver("W = k*q1*q2/R", "R", (known) => known.k * known.q1 * known.q2 / known.W);
-
-// φ = W/q
-registerFormulaSolver("φ = W/q", "φ", (known) => known.W / known.q);
-registerFormulaSolver("φ = W/q", "W", (known) => known.φ * known.q);
-registerFormulaSolver("φ = W/q", "q", (known) => known.W / known.φ);
-
-// φ = k*q/R
-registerFormulaSolver("φ = k*q/R", "φ", (known) => known.k * known.q / known.R);
-registerFormulaSolver("φ = k*q/R", "k", (known) => known.φ * known.R / known.q);
-registerFormulaSolver("φ = k*q/R", "q", (known) => known.φ * known.R / known.k);
-registerFormulaSolver("φ = k*q/R", "R", (known) => known.k * known.q / known.φ);
-
-// U = A/q
-registerFormulaSolver("U = A/q", "U", (known) => known.A / known.q);
-registerFormulaSolver("U = A/q", "A", (known) => known.U * known.q);
-registerFormulaSolver("U = A/q", "q", (known) => known.A / known.U);
-
-// U = E*d
-registerFormulaSolver("U = E*d", "U", (known) => known.E * known.d);
-registerFormulaSolver("U = E*d", "E", (known) => known.U / known.d);
-registerFormulaSolver("U = E*d", "d", (known) => known.U / known.E);
-
-// C = q/U
-registerFormulaSolver("C = q/U", "C", (known) => known.q / known.U);
-registerFormulaSolver("C = q/U", "q", (known) => known.C * known.U);
-registerFormulaSolver("C = q/U", "U", (known) => known.q / known.C);
-
-// C = S*ε*ε0/d
-registerFormulaSolver("C = S*ε*ε0/d", "C", (known) => known.S * known.ε * known.ε0 / known.d);
-registerFormulaSolver("C = S*ε*ε0/d", "S", (known) => known.C * known.d / (known.ε * known.ε0));
-registerFormulaSolver("C = S*ε*ε0/d", "ε", (known) => known.C * known.d / (known.S * known.ε0));
-registerFormulaSolver("C = S*ε*ε0/d", "ε0", (known) => known.C * known.d / (known.S * known.ε));
-registerFormulaSolver("C = S*ε*ε0/d", "d", (known) => known.S * known.ε * known.ε0 / known.C);
-
-// W = C*U^2/2
-registerFormulaSolver("W = C*U^2/2", "W", (known) => known.C * Math.pow(known.U, 2) / 2);
-registerFormulaSolver("W = C*U^2/2", "C", (known) => 2 * known.W / Math.pow(known.U, 2));
-registerFormulaSolver("W = C*U^2/2", "U", (known) => Math.sqrt(2 * known.W / known.C) * (known.rootSign || 1));
-
-// I = q/t
-registerFormulaSolver("I = q/t", "I", (known) => known.q / known.t);
-registerFormulaSolver("I = q/t", "q", (known) => known.I * known.t);
-registerFormulaSolver("I = q/t", "t", (known) => known.q / known.I);
-
-// R = ρ*ℓ/S
-registerFormulaSolver("R = ρ*ℓ/S", "R", (known) => known.ρ * known.ℓ / known.S);
-registerFormulaSolver("R = ρ*ℓ/S", "ρ", (known) => known.R * known.S / known.ℓ);
-registerFormulaSolver("R = ρ*ℓ/S", "ℓ", (known) => known.R * known.S / known.ρ);
-registerFormulaSolver("R = ρ*ℓ/S", "S", (known) => known.ρ * known.ℓ / known.R);
-
-// R = R1 + R2
-registerFormulaSolver("R = R1 + R2", "R", (known) => known.R1 + known.R2);
-registerFormulaSolver("R = R1 + R2", "R1", (known) => known.R - known.R2);
-registerFormulaSolver("R = R1 + R2", "R2", (known) => known.R - known.R1);
-
-// U = U1 + U2
-registerFormulaSolver("U = U1 + U2", "U", (known) => known.U1 + known.U2);
-registerFormulaSolver("U = U1 + U2", "U1", (known) => known.U - known.U2);
-registerFormulaSolver("U = U1 + U2", "U2", (known) => known.U - known.U1);
-
-// I1 = I2
-registerFormulaSolver("I1 = I2", "I1", (known) => known.I2);
-registerFormulaSolver("I1 = I2", "I2", (known) => known.I1);
-
-// R = 1/(1/R1 + 1/R2)
-registerFormulaSolver("R = 1/(1/R1 + 1/R2)", "R", (known) => 1 / (1/known.R1 + 1/known.R2));
-registerFormulaSolver("R = 1/(1/R1 + 1/R2)", "R1", (known) => 1 / (1/known.R - 1/known.R2));
-registerFormulaSolver("R = 1/(1/R1 + 1/R2)", "R2", (known) => 1 / (1/known.R - 1/known.R1));
-
-// U1 = U2
-registerFormulaSolver("U1 = U2", "U1", (known) => known.U2);
-registerFormulaSolver("U1 = U2", "U2", (known) => known.U1);
-
-// I = I1 + I2
-registerFormulaSolver("I = I1 + I2", "I", (known) => known.I1 + known.I2);
-registerFormulaSolver("I = I1 + I2", "I1", (known) => known.I - known.I2);
-registerFormulaSolver("I = I1 + I2", "I2", (known) => known.I - known.I1);
-
-// P = I*U
-registerFormulaSolver("P = I*U", "P", (known) => known.I * known.U);
-registerFormulaSolver("P = I*U", "I", (known) => known.P / known.U);
-registerFormulaSolver("P = I*U", "U", (known) => known.P / known.I);
-
-// Q = I^2*R*t
-registerFormulaSolver("Q = I^2*R*t", "Q", (known) => Math.pow(known.I, 2) * known.R * known.t);
-registerFormulaSolver("Q = I^2*R*t", "I", (known) => Math.sqrt(known.Q / (known.R * known.t)) * (known.rootSign || 1));
-registerFormulaSolver("Q = I^2*R*t", "R", (known) => known.Q / (Math.pow(known.I, 2) * known.t));
-registerFormulaSolver("Q = I^2*R*t", "t", (known) => known.Q / (Math.pow(known.I, 2) * known.R));
-
-// I = ε/(R + r)
-registerFormulaSolver("I = ε/(R + r)", "I", (known) => known.ε / (known.R + known.r));
-registerFormulaSolver("I = ε/(R + r)", "ε", (known) => known.I * (known.R + known.r));
-registerFormulaSolver("I = ε/(R + r)", "R", (known) => known.ε / known.I - known.r);
-registerFormulaSolver("I = ε/(R + r)", "r", (known) => known.ε / known.I - known.R);
-
-// I = ε/r
-registerFormulaSolver("I = ε/r", "I", (known) => known.ε / known.r);
-registerFormulaSolver("I = ε/r", "ε", (known) => known.I * known.r);
-registerFormulaSolver("I = ε/r", "r", (known) => known.ε / known.I);
-
-// B = Fmax/(I*ℓ)
-registerFormulaSolver("B = Fmax/(I*ℓ)", "B", (known) => known.Fmax / (known.I * known.ℓ));
-registerFormulaSolver("B = Fmax/(I*ℓ)", "Fmax", (known) => known.B * known.I * known.ℓ);
-registerFormulaSolver("B = Fmax/(I*ℓ)", "I", (known) => known.Fmax / (known.B * known.ℓ));
-registerFormulaSolver("B = Fmax/(I*ℓ)", "ℓ", (known) => known.Fmax / (known.B * known.I));
-
-// Fa = I*B*ℓ*sin(α)
-registerFormulaSolver("Fa = I*B*ℓ*sin(α)", "Fa", (known) => known.I * known.B * known.ℓ * Math.sin(known.α));
-registerFormulaSolver("Fa = I*B*ℓ*sin(α)", "I", (known) => known.Fa / (known.B * known.ℓ * Math.sin(known.α)));
-registerFormulaSolver("Fa = I*B*ℓ*sin(α)", "B", (known) => known.Fa / (known.I * known.ℓ * Math.sin(known.α)));
-registerFormulaSolver("Fa = I*B*ℓ*sin(α)", "ℓ", (known) => known.Fa / (known.I * known.B * Math.sin(known.α)));
-registerFormulaSolver("Fa = I*B*ℓ*sin(α)", "α", (known) => Math.asin(known.Fa / (known.I * known.B * known.ℓ)));
-
-// Fл = B*q*υ*sin(α)
-registerFormulaSolver("Fл = B*q*υ*sin(α)", "Fл", (known) => known.B * known.q * known.υ * Math.sin(known.α));
-registerFormulaSolver("Fл = B*q*υ*sin(α)", "B", (known) => known.Fл / (known.q * known.υ * Math.sin(known.α)));
-registerFormulaSolver("Fл = B*q*υ*sin(α)", "q", (known) => known.Fл / (known.B * known.υ * Math.sin(known.α)));
-registerFormulaSolver("Fл = B*q*υ*sin(α)", "υ", (known) => known.Fл / (known.B * known.q * Math.sin(known.α)));
-registerFormulaSolver("Fл = B*q*υ*sin(α)", "α", (known) => Math.asin(known.Fл / (known.B * known.q * known.υ)));
-
-// Ф = B*S*cos(α)
-registerFormulaSolver("Ф = B*S*cos(α)", "Ф", (known) => known.B * known.S * Math.cos(known.α));
-registerFormulaSolver("Ф = B*S*cos(α)", "B", (known) => known.Ф / (known.S * Math.cos(known.α)));
-registerFormulaSolver("Ф = B*S*cos(α)", "S", (known) => known.Ф / (known.B * Math.cos(known.α)));
-registerFormulaSolver("Ф = B*S*cos(α)", "α", (known) => Math.acos(known.Ф / (known.B * known.S)));
-
-// Ф = L*I
-registerFormulaSolver("Ф = L*I", "Ф", (known) => known.L * known.I);
-registerFormulaSolver("Ф = L*I", "L", (known) => known.Ф / known.I);
-registerFormulaSolver("Ф = L*I", "I", (known) => known.Ф / known.L);
-
-// Ei = ΔФ/Δt
-registerFormulaSolver("Ei = ΔФ/Δt", "Ei", (known) => known.ΔФ / known.Δt);
-registerFormulaSolver("Ei = ΔФ/Δt", "ΔФ", (known) => known.Ei * known.Δt);
-registerFormulaSolver("Ei = ΔФ/Δt", "Δt", (known) => known.ΔФ / known.Ei);
-
-// Ei = B*ℓ*υ*sin(α)
-registerFormulaSolver("Ei = B*ℓ*υ*sin(α)", "Ei", (known) => known.B * known.ℓ * known.υ * Math.sin(known.α));
-registerFormulaSolver("Ei = B*ℓ*υ*sin(α)", "B", (known) => known.Ei / (known.ℓ * known.υ * Math.sin(known.α)));
-registerFormulaSolver("Ei = B*ℓ*υ*sin(α)", "ℓ", (known) => known.Ei / (known.B * known.υ * Math.sin(known.α)));
-registerFormulaSolver("Ei = B*ℓ*υ*sin(α)", "υ", (known) => known.Ei / (known.B * known.ℓ * Math.sin(known.α)));
-registerFormulaSolver("Ei = B*ℓ*υ*sin(α)", "α", (known) => Math.asin(known.Ei / (known.B * known.ℓ * known.υ)));
-
-// Esi = -L*ΔI/Δt
-registerFormulaSolver("Esi = -L*ΔI/Δt", "Esi", (known) => -known.L * known.ΔI / known.Δt);
-registerFormulaSolver("Esi = -L*ΔI/Δt", "L", (known) => -known.Esi * known.Δt / known.ΔI);
-registerFormulaSolver("Esi = -L*ΔI/Δt", "ΔI", (known) => -known.Esi * known.Δt / known.L);
-registerFormulaSolver("Esi = -L*ΔI/Δt", "Δt", (known) => -known.L * known.ΔI / known.Esi);
-
-// Wм = L*I^2/2
-registerFormulaSolver("Wм = L*I^2/2", "Wм", (known) => known.L * Math.pow(known.I, 2) / 2);
-registerFormulaSolver("Wм = L*I^2/2", "L", (known) => 2 * known.Wм / Math.pow(known.I, 2));
-registerFormulaSolver("Wм = L*I^2/2", "I", (known) => Math.sqrt(2 * known.Wм / known.L) * (known.rootSign || 1));
-
-// ---------- Колебания и волны ----------
-// T = 2*π*√(ℓ/g)
-registerFormulaSolver("T = 2*π*√(ℓ/g)", "T", (known) => 2 * Math.PI * Math.sqrt(known.ℓ / known.g));
-registerFormulaSolver("T = 2*π*√(ℓ/g)", "ℓ", (known) => Math.pow(known.T / (2 * Math.PI), 2) * known.g);
-registerFormulaSolver("T = 2*π*√(ℓ/g)", "g", (known) => Math.pow(2 * Math.PI / known.T, 2) * known.ℓ);
-
-// T = 2*π*√(m/k)
-registerFormulaSolver("T = 2*π*√(m/k)", "T", (known) => 2 * Math.PI * Math.sqrt(known.m / known.k));
-registerFormulaSolver("T = 2*π*√(m/k)", "m", (known) => Math.pow(known.T / (2 * Math.PI), 2) * known.k);
-registerFormulaSolver("T = 2*π*√(m/k)", "k", (known) => Math.pow(2 * Math.PI / known.T, 2) * known.m);
-
-// X = Xmax*cos(ω*t)
-registerFormulaSolver("X = Xmax*cos(ω*t)", "X", (known) => known.Xmax * Math.cos(known.ω * known.t));
-registerFormulaSolver("X = Xmax*cos(ω*t)", "Xmax", (known) => known.X / Math.cos(known.ω * known.t));
-registerFormulaSolver("X = Xmax*cos(ω*t)", "ω", (known) => Math.acos(known.X / known.Xmax) / known.t);
-registerFormulaSolver("X = Xmax*cos(ω*t)", "t", (known) => Math.acos(known.X / known.Xmax) / known.ω);
-
-// λ = υ*T
-registerFormulaSolver("λ = υ*T", "λ", (known) => known.υ * known.T);
-registerFormulaSolver("λ = υ*T", "υ", (known) => known.λ / known.T);
-registerFormulaSolver("λ = υ*T", "T", (known) => known.λ / known.υ);
-
-// T = 2*π*√(L*C)
-registerFormulaSolver("T = 2*π*√(L*C)", "T", (known) => 2 * Math.PI * Math.sqrt(known.L * known.C));
-registerFormulaSolver("T = 2*π*√(L*C)", "L", (known) => Math.pow(known.T / (2 * Math.PI), 2) / known.C);
-registerFormulaSolver("T = 2*π*√(L*C)", "C", (known) => Math.pow(known.T / (2 * Math.PI), 2) / known.L);
-
-// XL = 2*π*L*ν
-registerFormulaSolver("XL = 2*π*L*ν", "XL", (known) => 2 * Math.PI * known.L * known.ν);
-registerFormulaSolver("XL = 2*π*L*ν", "L", (known) => known.XL / (2 * Math.PI * known.ν));
-registerFormulaSolver("XL = 2*π*L*ν", "ν", (known) => known.XL / (2 * Math.PI * known.L));
-
-// Xc = 1/(2*π*ν*C)
-registerFormulaSolver("Xc = 1/(2*π*ν*C)", "Xc", (known) => 1 / (2 * Math.PI * known.ν * known.C));
-registerFormulaSolver("Xc = 1/(2*π*ν*C)", "ν", (known) => 1 / (2 * Math.PI * known.Xc * known.C));
-registerFormulaSolver("Xc = 1/(2*π*ν*C)", "C", (known) => 1 / (2 * Math.PI * known.ν * known.Xc));
-
-// Iд = Imax/√(2)
-registerFormulaSolver("Iд = Imax/√(2)", "Iд", (known) => known.Imax / Math.sqrt(2));
-registerFormulaSolver("Iд = Imax/√(2)", "Imax", (known) => known.Iд * Math.sqrt(2));
-
-// Uд = Umax/√(2)
-registerFormulaSolver("Uд = Umax/√(2)", "Uд", (known) => known.Umax / Math.sqrt(2));
-registerFormulaSolver("Uд = Umax/√(2)", "Umax", (known) => known.Uд * Math.sqrt(2));
-
-// Z = √((Xc - XL)^2 + R^2)
-registerFormulaSolver("Z = √((Xc - XL)^2 + R^2)", "Z", (known) => Math.sqrt(Math.pow(known.Xc - known.XL, 2) + Math.pow(known.R, 2)));
-registerFormulaSolver("Z = √((Xc - XL)^2 + R^2)", "Xc", (known) => known.XL + Math.sqrt(Math.pow(known.Z, 2) - Math.pow(known.R, 2)));
-registerFormulaSolver("Z = √((Xc - XL)^2 + R^2)", "XL", (known) => known.Xc - Math.sqrt(Math.pow(known.Z, 2) - Math.pow(known.R, 2)));
-registerFormulaSolver("Z = √((Xc - XL)^2 + R^2)", "R", (known) => Math.sqrt(Math.pow(known.Z, 2) - Math.pow(known.Xc - known.XL, 2)));
-
-// ---------- Оптика ----------
-// n21 = n2/n1
-registerFormulaSolver("n21 = n2/n1", "n21", (known) => known.n2 / known.n1);
-registerFormulaSolver("n21 = n2/n1", "n2", (known) => known.n21 * known.n1);
-registerFormulaSolver("n21 = n2/n1", "n1", (known) => known.n2 / known.n21);
-
-// n21 = sin(α)/sin(γ)
-registerFormulaSolver("n21 = sin(α)/sin(γ)", "n21", (known) => Math.sin(known.α) / Math.sin(known.γ));
-registerFormulaSolver("n21 = sin(α)/sin(γ)", "α", (known) => Math.asin(known.n21 * Math.sin(known.γ)));
-registerFormulaSolver("n21 = sin(α)/sin(γ)", "γ", (known) => Math.asin(Math.sin(known.α) / known.n21));
-
-// 1/F = 1/d + 1/f
-registerFormulaSolver("1/F = 1/d + 1/f", "F", (known) => 1 / (1/known.d + 1/known.f));
-registerFormulaSolver("1/F = 1/d + 1/f", "d", (known) => 1 / (1/known.F - 1/known.f));
-registerFormulaSolver("1/F = 1/d + 1/f", "f", (known) => 1 / (1/known.F - 1/known.d));
-
-// D = 1/F
-registerFormulaSolver("D = 1/F", "D", (known) => 1 / known.F);
-registerFormulaSolver("D = 1/F", "F", (known) => 1 / known.D);
-
-// Δd = k*λ
-registerFormulaSolver("Δd = k*λ", "Δd", (known) => known.k * known.λ);
-registerFormulaSolver("Δd = k*λ", "k", (known) => known.Δd / known.λ);
-registerFormulaSolver("Δd = k*λ", "λ", (known) => known.Δd / known.k);
-
-// Δd = (2k+1)*λ/2
-registerFormulaSolver("Δd = (2k+1)*λ/2", "Δd", (known) => (2*known.k + 1) * known.λ / 2);
-registerFormulaSolver("Δd = (2k+1)*λ/2", "k", (known) => (2*known.Δd / known.λ - 1) / 2);
-registerFormulaSolver("Δd = (2k+1)*λ/2", "λ", (known) => 2 * known.Δd / (2*known.k + 1));
-
-// d*sin(φ) = k*λ
-registerFormulaSolver("d*sin(φ) = k*λ", "d", (known) => known.k * known.λ / Math.sin(known.φ));
-registerFormulaSolver("d*sin(φ) = k*λ", "sin(φ)", (known) => known.k * known.λ / known.d);
-registerFormulaSolver("d*sin(φ) = k*λ", "k", (known) => known.d * Math.sin(known.φ) / known.λ);
-registerFormulaSolver("d*sin(φ) = k*λ", "λ", (known) => known.d * Math.sin(known.φ) / known.k);
-registerFormulaSolver("d*sin(φ) = k*λ", "φ", (known) => Math.asin(known.k * known.λ / known.d));
-
-// ---------- Квантовая физика ----------
-// h*ν = Aвых + Ek
-registerFormulaSolver("h*ν = Aвых + Ek", "h", (known) => (known.Aвых + known.Ek) / known.ν);
-registerFormulaSolver("h*ν = Aвых + Ek", "ν", (known) => (known.Aвых + known.Ek) / known.h);
-registerFormulaSolver("h*ν = Aвых + Ek", "Aвых", (known) => known.h * known.ν - known.Ek);
-registerFormulaSolver("h*ν = Aвых + Ek", "Ek", (known) => known.h * known.ν - known.Aвых);
-
-// νк = Aвых/h
-registerFormulaSolver("νк = Aвых/h", "νк", (known) => known.Aвых / known.h);
-registerFormulaSolver("νк = Aвых/h", "Aвых", (known) => known.νк * known.h);
-registerFormulaSolver("νк = Aвых/h", "h", (known) => known.Aвых / known.νк);
-
-// P = h/λ
-registerFormulaSolver("P = h/λ", "P", (known) => known.h / known.λ);
-registerFormulaSolver("P = h/λ", "h", (known) => known.P * known.λ);
-registerFormulaSolver("P = h/λ", "λ", (known) => known.h / known.P);
-
-// P = E/c
-registerFormulaSolver("P = E/c", "P", (known) => known.E / known.c);
-registerFormulaSolver("P = E/c", "E", (known) => known.P * known.c);
-registerFormulaSolver("P = E/c", "c", (known) => known.E / known.P);
-
-// N = N0*2^(-t/T)
-registerFormulaSolver("N = N0*2^(-t/T)", "N", (known) => known.N0 * Math.pow(2, -known.t / known.T));
-registerFormulaSolver("N = N0*2^(-t/T)", "N0", (known) => known.N / Math.pow(2, -known.t / known.T));
-registerFormulaSolver("N = N0*2^(-t/T)", "t", (known) => -known.T * Math.log2(known.N / known.N0));
-registerFormulaSolver("N = N0*2^(-t/T)", "T", (known) => -known.t / Math.log2(known.N / known.N0));
-
-// Eсв = (Z*mp + N*mn - Mя)*c^2
-registerFormulaSolver("Eсв = (Z*mp + N*mn - Mя)*c^2", "Eсв", (known) => (known.Z * known.mp + known.N * known.mn - known.Mя) * Math.pow(known.c, 2));
-registerFormulaSolver("Eсв = (Z*mp + N*mn - Mя)*c^2", "Z", (known) => (known.Eсв / Math.pow(known.c, 2) - known.N * known.mn + known.Mя) / known.mp);
-registerFormulaSolver("Eсв = (Z*mp + N*mn - Mя)*c^2", "N", (known) => (known.Eсв / Math.pow(known.c, 2) - known.Z * known.mp + known.Mя) / known.mn);
-registerFormulaSolver("Eсв = (Z*mp + N*mn - Mя)*c^2", "Mя", (known) => known.Z * known.mp + known.N * known.mn - known.Eсв / Math.pow(known.c, 2));
-registerFormulaSolver("Eсв = (Z*mp + N*mn - Mя)*c^2", "c", (known) => Math.sqrt(known.Eсв / (known.Z * known.mp + known.N * known.mn - known.Mя)));
-
-// ---------- СТО ----------
-// t = t1/√(1 - υ^2/c^2)
-registerFormulaSolver("t = t1/√(1 - υ^2/c^2)", "t", (known) => known.t1 / Math.sqrt(1 - Math.pow(known.υ, 2) / Math.pow(known.c, 2)));
-registerFormulaSolver("t = t1/√(1 - υ^2/c^2)", "t1", (known) => known.t * Math.sqrt(1 - Math.pow(known.υ, 2) / Math.pow(known.c, 2)));
-registerFormulaSolver("t = t1/√(1 - υ^2/c^2)", "υ", (known) => known.c * Math.sqrt(1 - Math.pow(known.t1 / known.t, 2)));
-registerFormulaSolver("t = t1/√(1 - υ^2/c^2)", "c", (known) => known.υ / Math.sqrt(1 - Math.pow(known.t1 / known.t, 2)));
-
-// ℓ = ℓ0*√(1 - υ^2/c^2)
-registerFormulaSolver("ℓ = ℓ0*√(1 - υ^2/c^2)", "ℓ", (known) => known.ℓ0 * Math.sqrt(1 - Math.pow(known.υ, 2) / Math.pow(known.c, 2)));
-registerFormulaSolver("ℓ = ℓ0*√(1 - υ^2/c^2)", "ℓ0", (known) => known.ℓ / Math.sqrt(1 - Math.pow(known.υ, 2) / Math.pow(known.c, 2)));
-registerFormulaSolver("ℓ = ℓ0*√(1 - υ^2/c^2)", "υ", (known) => known.c * Math.sqrt(1 - Math.pow(known.ℓ / known.ℓ0, 2)));
-registerFormulaSolver("ℓ = ℓ0*√(1 - υ^2/c^2)", "c", (known) => known.υ / Math.sqrt(1 - Math.pow(known.ℓ / known.ℓ0, 2)));
-
-// υ2 = (υ1 + υ)/(1 + υ1*υ/c^2)
-registerFormulaSolver("υ2 = (υ1 + υ)/(1 + υ1*υ/c^2)", "υ2", (known) => (known.υ1 + known.υ) / (1 + known.υ1 * known.υ / Math.pow(known.c, 2)));
-registerFormulaSolver("υ2 = (υ1 + υ)/(1 + υ1*υ/c^2)", "υ1", (known) => (known.υ2 - known.υ) / (1 - known.υ2 * known.υ / Math.pow(known.c, 2)));
-registerFormulaSolver("υ2 = (υ1 + υ)/(1 + υ1*υ/c^2)", "υ", (known) => (known.υ2 - known.υ1) / (1 - known.υ2 * known.υ1 / Math.pow(known.c, 2)));
-registerFormulaSolver("υ2 = (υ1 + υ)/(1 + υ1*υ/c^2)", "c", (known) => Math.sqrt(Math.abs(known.υ1 * known.υ * (known.υ2 - known.υ1 - known.υ) / (known.υ2 - known.υ1 - known.υ + 1))));
-
-// E = m*c^2
-registerFormulaSolver("E = m*c^2", "E", (known) => known.m * Math.pow(known.c, 2));
-registerFormulaSolver("E = m*c^2", "m", (known) => known.E / Math.pow(known.c, 2));
-registerFormulaSolver("E = m*c^2", "c", (known) => Math.sqrt(known.E / known.m));
+    // ---------- Арифметические операторы ----------
+    // Сложение
+    registerFormulaSolver("out = in1 + in2", "out", (known) => known.in1 + known.in2);
+    registerFormulaSolver("out = in1 + in2", "in1", (known) => known.out - known.in2);
+    registerFormulaSolver("out = in1 + in2", "in2", (known) => known.out - known.in1);
+    // Вычитание
+    registerFormulaSolver("out = in1 - in2", "out", (known) => known.in1 - known.in2);
+    registerFormulaSolver("out = in1 - in2", "in1", (known) => known.out + known.in2);
+    registerFormulaSolver("out = in1 - in2", "in2", (known) => known.in1 - known.out);
+    // Умножение
+    registerFormulaSolver("out = in1 * in2", "out", (known) => known.in1 * known.in2);
+    registerFormulaSolver("out = in1 * in2", "in1", (known) => known.out / known.in2);
+    registerFormulaSolver("out = in1 * in2", "in2", (known) => known.out / known.in1);
+    // Деление
+    registerFormulaSolver("out = in1 / in2", "out", (known) => known.in1 / known.in2);
+    registerFormulaSolver("out = in1 / in2", "in1", (known) => known.out * known.in2);
+    registerFormulaSolver("out = in1 / in2", "in2", (known) => known.in1 / known.out);
+
+    // ---------- Механика ----------
+    registerFormulaSolver("P = F/S", "P", (known) => known.F / known.S);
+    registerFormulaSolver("P = F/S", "F", (known) => known.P * known.S);
+    registerFormulaSolver("P = F/S", "S", (known) => known.F / known.P);
+
+    registerFormulaSolver("ρ = m/V", "ρ", (known) => known.m / known.V);
+    registerFormulaSolver("ρ = m/V", "m", (known) => known.ρ * known.V);
+    registerFormulaSolver("ρ = m/V", "V", (known) => known.m / known.ρ);
+
+    registerFormulaSolver("P = ρ*g*h", "P", (known) => known.ρ * known.g * known.h);
+    registerFormulaSolver("P = ρ*g*h", "ρ", (known) => known.P / (known.g * known.h));
+    registerFormulaSolver("P = ρ*g*h", "g", (known) => known.P / (known.ρ * known.h));
+    registerFormulaSolver("P = ρ*g*h", "h", (known) => known.P / (known.ρ * known.g));
+
+    registerFormulaSolver("Fт = m*g", "Fт", (known) => known.m * known.g);
+    registerFormulaSolver("Fт = m*g", "m", (known) => known.Fт / known.g);
+    registerFormulaSolver("Fт = m*g", "g", (known) => known.Fт / known.m);
+
+    registerFormulaSolver("Fₐ = ρж*g*Vт", "Fₐ", (known) => known.ρж * known.g * known.Vт);
+    registerFormulaSolver("Fₐ = ρж*g*Vт", "ρж", (known) => known.Fₐ / (known.g * known.Vт));
+    registerFormulaSolver("Fₐ = ρж*g*Vт", "g", (known) => known.Fₐ / (known.ρж * known.Vт));
+    registerFormulaSolver("Fₐ = ρж*g*Vт", "Vт", (known) => known.Fₐ / (known.ρж * known.g));
+
+    registerFormulaSolver("F = m*a", "F", (known) => known.m * known.a);
+    registerFormulaSolver("F = m*a", "m", (known) => known.F / known.a);
+    registerFormulaSolver("F = m*a", "a", (known) => known.F / known.m);
+
+    registerFormulaSolver("Fy = -k*x", "Fy", (known) => -known.k * known.x);
+    registerFormulaSolver("Fy = -k*x", "k", (known) => -known.Fy / known.x);
+    registerFormulaSolver("Fy = -k*x", "x", (known) => -known.Fy / known.k);
+
+    registerFormulaSolver("Ek = m*υ^2/2", "Ek", (known) => known.m * Math.pow(known.υ, 2) / 2);
+    registerFormulaSolver("Ek = m*υ^2/2", "m", (known) => 2 * known.Ek / Math.pow(known.υ, 2));
+    registerFormulaSolver("Ek = m*υ^2/2", "υ", (known) => Math.sqrt(2 * known.Ek / known.m) * (known.rootSign || 1));
+
+    registerFormulaSolver("A = F*S*cos(α)", "A", (known) => known.F * known.S * Math.cos(known.α));
+    registerFormulaSolver("A = F*S*cos(α)", "F", (known) => known.A / (known.S * Math.cos(known.α)));
+    registerFormulaSolver("A = F*S*cos(α)", "S", (known) => known.A / (known.F * Math.cos(known.α)));
+    registerFormulaSolver("A = F*S*cos(α)", "α", (known) => Math.acos(known.A / (known.F * known.S)));
+
+    registerFormulaSolver("N = A/t", "N", (known) => known.A / known.t);
+    registerFormulaSolver("N = A/t", "A", (known) => known.N * known.t);
+    registerFormulaSolver("N = A/t", "t", (known) => known.A / known.N);
+
+    // X = X0 + υ0*t + (a*t^2)/2
+    registerFormulaSolver("X = X0 + υ0*t + (a*t^2)/2", "X", (known) => known.X0 + known.υ0 * known.t + known.a * Math.pow(known.t, 2) / 2);
+    registerFormulaSolver("X = X0 + υ0*t + (a*t^2)/2", "X0", (known) => known.X - known.υ0 * known.t - known.a * Math.pow(known.t, 2) / 2);
+    registerFormulaSolver("X = X0 + υ0*t + (a*t^2)/2", "υ0", (known) => (known.X - known.X0 - known.a * Math.pow(known.t, 2) / 2) / known.t);
+    registerFormulaSolver("X = X0 + υ0*t + (a*t^2)/2", "t", (known) => {
+        const a2 = known.a / 2;
+        const b = known.υ0;
+        const c = known.X0 - known.X;
+        return solveQuadratic(a2, b, c, known.rootSign);
+    });
+    registerFormulaSolver("X = X0 + υ0*t + (a*t^2)/2", "a", (known) => 2 * (known.X - known.X0 - known.υ0 * known.t) / Math.pow(known.t, 2));
+
+    // S = (υ2^2 - υ0^2)/(2*a)
+    registerFormulaSolver("S = (υ2^2 - υ0^2)/(2*a)", "S", (known) => (Math.pow(known.υ2, 2) - Math.pow(known.υ0, 2)) / (2 * known.a));
+    registerFormulaSolver("S = (υ2^2 - υ0^2)/(2*a)", "υ2", (known) => Math.sqrt(2 * known.a * known.S + Math.pow(known.υ0, 2)) * (known.rootSign || 1));
+    registerFormulaSolver("S = (υ2^2 - υ0^2)/(2*a)", "υ0", (known) => Math.sqrt(Math.pow(known.υ2, 2) - 2 * known.a * known.S) * (known.rootSign || 1));
+    registerFormulaSolver("S = (υ2^2 - υ0^2)/(2*a)", "a", (known) => (Math.pow(known.υ2, 2) - Math.pow(known.υ0, 2)) / (2 * known.S));
+
+    // S = (υ + υ0)*t/2
+    registerFormulaSolver("S = (υ + υ0)*t/2", "S", (known) => (known.υ + known.υ0) * known.t / 2);
+    registerFormulaSolver("S = (υ + υ0)*t/2", "υ", (known) => 2 * known.S / known.t - known.υ0);
+    registerFormulaSolver("S = (υ + υ0)*t/2", "υ0", (known) => 2 * known.S / known.t - known.υ);
+    registerFormulaSolver("S = (υ + υ0)*t/2", "t", (known) => 2 * known.S / (known.υ + known.υ0));
+
+    // υ = υ0 + a*t
+    registerFormulaSolver("υ = υ0 + a*t", "υ", (known) => known.υ0 + known.a * known.t);
+    registerFormulaSolver("υ = υ0 + a*t", "υ0", (known) => known.υ - known.a * known.t);
+    registerFormulaSolver("υ = υ0 + a*t", "a", (known) => (known.υ - known.υ0) / known.t);
+    registerFormulaSolver("υ = υ0 + a*t", "t", (known) => (known.υ - known.υ0) / known.a);
+
+    // a = (υ - υ0)/t
+    registerFormulaSolver("a = (υ - υ0)/t", "a", (known) => (known.υ - known.υ0) / known.t);
+    registerFormulaSolver("a = (υ - υ0)/t", "υ", (known) => known.a * known.t + known.υ0);
+    registerFormulaSolver("a = (υ - υ0)/t", "υ0", (known) => known.υ - known.a * known.t);
+    registerFormulaSolver("a = (υ - υ0)/t", "t", (known) => (known.υ - known.υ0) / known.a);
+
+    // υ = 2*π*R/T
+    registerFormulaSolver("υ = 2*π*R/T", "υ", (known) => 2 * Math.PI * known.R / known.T);
+    registerFormulaSolver("υ = 2*π*R/T", "R", (known) => known.υ * known.T / (2 * Math.PI));
+    registerFormulaSolver("υ = 2*π*R/T", "T", (known) => 2 * Math.PI * known.R / known.υ);
+
+    // a = υ^2/R
+    registerFormulaSolver("a = υ^2/R", "a", (known) => Math.pow(known.υ, 2) / known.R);
+    registerFormulaSolver("a = υ^2/R", "υ", (known) => Math.sqrt(known.a * known.R) * (known.rootSign || 1));
+    registerFormulaSolver("a = υ^2/R", "R", (known) => Math.pow(known.υ, 2) / known.a);
+
+    // ν = 1/T
+    registerFormulaSolver("ν = 1/T", "ν", (known) => 1 / known.T);
+    registerFormulaSolver("ν = 1/T", "T", (known) => 1 / known.ν);
+
+    // ν = ω/(2*π)
+    registerFormulaSolver("ν = ω/(2*π)", "ν", (known) => known.ω / (2 * Math.PI));
+    registerFormulaSolver("ν = ω/(2*π)", "ω", (known) => known.ν * 2 * Math.PI);
+
+    // ω = 2*π*ν
+    registerFormulaSolver("ω = 2*π*ν", "ω", (known) => 2 * Math.PI * known.ν);
+    registerFormulaSolver("ω = 2*π*ν", "ν", (known) => known.ω / (2 * Math.PI));
+
+    // F = G*M*m/R^2
+    registerFormulaSolver("F = G*M*m/R^2", "F", (known) => known.G * known.M * known.m / Math.pow(known.R, 2));
+    registerFormulaSolver("F = G*M*m/R^2", "G", (known) => known.F * Math.pow(known.R, 2) / (known.M * known.m));
+    registerFormulaSolver("F = G*M*m/R^2", "M", (known) => known.F * Math.pow(known.R, 2) / (known.G * known.m));
+    registerFormulaSolver("F = G*M*m/R^2", "m", (known) => known.F * Math.pow(known.R, 2) / (known.G * known.M));
+    registerFormulaSolver("F = G*M*m/R^2", "R", (known) => Math.sqrt(known.G * known.M * known.m / known.F) * (known.rootSign || 1));
+
+    // P = m*(g + a)
+    registerFormulaSolver("P = m*(g + a)", "P", (known) => known.m * (known.g + known.a));
+    registerFormulaSolver("P = m*(g + a)", "m", (known) => known.P / (known.g + known.a));
+    registerFormulaSolver("P = m*(g + a)", "g", (known) => known.P / known.m - known.a);
+    registerFormulaSolver("P = m*(g + a)", "a", (known) => known.P / known.m - known.g);
+
+    // P = m*(g - a)
+    registerFormulaSolver("P = m*(g - a)", "P", (known) => known.m * (known.g - known.a));
+    registerFormulaSolver("P = m*(g - a)", "m", (known) => known.P / (known.g - known.a));
+    registerFormulaSolver("P = m*(g - a)", "g", (known) => known.P / known.m + known.a);
+    registerFormulaSolver("P = m*(g - a)", "a", (known) => known.g - known.P / known.m);
+
+    // Fтр = μ*N
+    registerFormulaSolver("Fтр = μ*N", "Fтр", (known) => known.μ * known.N);
+    registerFormulaSolver("Fтр = μ*N", "μ", (known) => known.Fтр / known.N);
+    registerFormulaSolver("Fтр = μ*N", "N", (known) => known.Fтр / known.μ);
+
+    // p = m*υ
+    registerFormulaSolver("p = m*υ", "p", (known) => known.m * known.υ);
+    registerFormulaSolver("p = m*υ", "m", (known) => known.p / known.υ);
+    registerFormulaSolver("p = m*υ", "υ", (known) => known.p / known.m);
+
+    // Δp = F*t
+    registerFormulaSolver("Δp = F*t", "Δp", (known) => known.F * known.t);
+    registerFormulaSolver("Δp = F*t", "F", (known) => known.Δp / known.t);
+    registerFormulaSolver("Δp = F*t", "t", (known) => known.Δp / known.F);
+
+    // M = F*ℓ
+    registerFormulaSolver("M = F*ℓ", "M", (known) => known.F * known.ℓ);
+    registerFormulaSolver("M = F*ℓ", "F", (known) => known.M / known.ℓ);
+    registerFormulaSolver("M = F*ℓ", "ℓ", (known) => known.M / known.F);
+
+    // Eп = m*g*h
+    registerFormulaSolver("Eп = m*g*h", "Eп", (known) => known.m * known.g * known.h);
+    registerFormulaSolver("Eп = m*g*h", "m", (known) => known.Eп / (known.g * known.h));
+    registerFormulaSolver("Eп = m*g*h", "g", (known) => known.Eп / (known.m * known.h));
+    registerFormulaSolver("Eп = m*g*h", "h", (known) => known.Eп / (known.m * known.g));
+
+    // Eп = k*x^2/2
+    registerFormulaSolver("Eп = k*x^2/2", "Eп", (known) => known.k * Math.pow(known.x, 2) / 2);
+    registerFormulaSolver("Eп = k*x^2/2", "k", (known) => 2 * known.Eп / Math.pow(known.x, 2));
+    registerFormulaSolver("Eп = k*x^2/2", "x", (known) => Math.sqrt(2 * known.Eп / known.k) * (known.rootSign || 1));
+
+    // N = F*υ
+    registerFormulaSolver("N = F*υ", "N", (known) => known.F * known.υ);
+    registerFormulaSolver("N = F*υ", "F", (known) => known.N / known.υ);
+    registerFormulaSolver("N = F*υ", "υ", (known) => known.N / known.F);
+
+    // η = Aп/Aз
+    registerFormulaSolver("η = Aп/Aз", "η", (known) => known.Aп / known.Aз);
+    registerFormulaSolver("η = Aп/Aз", "Aп", (known) => known.η * known.Aз);
+    registerFormulaSolver("η = Aп/Aз", "Aз", (known) => known.Aп / known.η);
+
+    // ---------- Молекулярная физика ----------
+    // ν = N/Na
+    registerFormulaSolver("ν = N/Na", "ν", (known) => known.N / known.Na);
+    registerFormulaSolver("ν = N/Na", "N", (known) => known.ν * known.Na);
+    registerFormulaSolver("ν = N/Na", "Na", (known) => known.N / known.ν);
+
+    // M = m/ν
+    registerFormulaSolver("M = m/ν", "M", (known) => known.m / known.ν);
+    registerFormulaSolver("M = m/ν", "m", (known) => known.M * known.ν);
+    registerFormulaSolver("M = m/ν", "ν", (known) => known.m / known.M);
+
+    // Ek = (3/2)*k*T
+    registerFormulaSolver("Ek = (3/2)*k*T", "Ek", (known) => 1.5 * known.k * known.T);
+    registerFormulaSolver("Ek = (3/2)*k*T", "k", (known) => known.Ek / (1.5 * known.T));
+    registerFormulaSolver("Ek = (3/2)*k*T", "T", (known) => known.Ek / (1.5 * known.k));
+
+    // P = n*k*T
+    registerFormulaSolver("P = n*k*T", "P", (known) => known.n * known.k * known.T);
+    registerFormulaSolver("P = n*k*T", "n", (known) => known.P / (known.k * known.T));
+    registerFormulaSolver("P = n*k*T", "k", (known) => known.P / (known.n * known.T));
+    registerFormulaSolver("P = n*k*T", "T", (known) => known.P / (known.n * known.k));
+
+    // P = (1/3)*n*m0*υ^2
+    registerFormulaSolver("P = (1/3)*n*m0*υ^2", "P", (known) => known.n * known.m0 * Math.pow(known.υ, 2) / 3);
+    registerFormulaSolver("P = (1/3)*n*m0*υ^2", "n", (known) => 3 * known.P / (known.m0 * Math.pow(known.υ, 2)));
+    registerFormulaSolver("P = (1/3)*n*m0*υ^2", "m0", (known) => 3 * known.P / (known.n * Math.pow(known.υ, 2)));
+    registerFormulaSolver("P = (1/3)*n*m0*υ^2", "υ", (known) => Math.sqrt(3 * known.P / (known.n * known.m0)) * (known.rootSign || 1));
+
+    // V2 = V1*T2/T1
+    registerFormulaSolver("V2 = V1*T2/T1", "V2", (known) => known.V1 * known.T2 / known.T1);
+    registerFormulaSolver("V2 = V1*T2/T1", "V1", (known) => known.V2 * known.T1 / known.T2);
+    registerFormulaSolver("V2 = V1*T2/T1", "T2", (known) => known.V2 * known.T1 / known.V1);
+    registerFormulaSolver("V2 = V1*T2/T1", "T1", (known) => known.V1 * known.T2 / known.V2);
+
+    // P2 = P1*T2/T1
+    registerFormulaSolver("P2 = P1*T2/T1", "P2", (known) => known.P1 * known.T2 / known.T1);
+    registerFormulaSolver("P2 = P1*T2/T1", "P1", (known) => known.P2 * known.T1 / known.T2);
+    registerFormulaSolver("P2 = P1*T2/T1", "T2", (known) => known.P2 * known.T1 / known.P1);
+    registerFormulaSolver("P2 = P1*T2/T1", "T1", (known) => known.P1 * known.T2 / known.P2);
+
+    // φ = P/P0
+    registerFormulaSolver("φ = P/P0", "φ", (known) => known.P / known.P0);
+    registerFormulaSolver("φ = P/P0", "P", (known) => known.φ * known.P0);
+    registerFormulaSolver("φ = P/P0", "P0", (known) => known.P / known.φ);
+
+    // U = (3/2)*(M/µ)*R*T
+    registerFormulaSolver("U = (3/2)*(M/µ)*R*T", "U", (known) => 1.5 * (known.M / known.µ) * known.R * known.T);
+    registerFormulaSolver("U = (3/2)*(M/µ)*R*T", "M", (known) => (known.U * known.µ) / (1.5 * known.R * known.T));
+    registerFormulaSolver("U = (3/2)*(M/µ)*R*T", "µ", (known) => (1.5 * known.M * known.R * known.T) / known.U);
+    registerFormulaSolver("U = (3/2)*(M/µ)*R*T", "R", (known) => (known.U * known.µ) / (1.5 * known.M * known.T));
+    registerFormulaSolver("U = (3/2)*(M/µ)*R*T", "T", (known) => (known.U * known.µ) / (1.5 * known.M * known.R));
+
+    // A = P*ΔV
+    registerFormulaSolver("A = P*ΔV", "A", (known) => known.P * known.ΔV);
+    registerFormulaSolver("A = P*ΔV", "P", (known) => known.A / known.ΔV);
+    registerFormulaSolver("A = P*ΔV", "ΔV", (known) => known.A / known.P);
+
+    // P2 = P1*V1/V2
+    registerFormulaSolver("P2 = P1*V1/V2", "P2", (known) => known.P1 * known.V1 / known.V2);
+    registerFormulaSolver("P2 = P1*V1/V2", "P1", (known) => known.P2 * known.V2 / known.V1);
+    registerFormulaSolver("P2 = P1*V1/V2", "V1", (known) => known.P2 * known.V2 / known.P1);
+    registerFormulaSolver("P2 = P1*V1/V2", "V2", (known) => known.P1 * known.V1 / known.P2);
+
+    // Q = C*m*(T2 - T1)
+    registerFormulaSolver("Q = C*m*(T2 - T1)", "Q", (known) => known.C * known.m * (known.T2 - known.T1));
+    registerFormulaSolver("Q = C*m*(T2 - T1)", "C", (known) => known.Q / (known.m * (known.T2 - known.T1)));
+    registerFormulaSolver("Q = C*m*(T2 - T1)", "m", (known) => known.Q / (known.C * (known.T2 - known.T1)));
+    registerFormulaSolver("Q = C*m*(T2 - T1)", "T2", (known) => known.T1 + known.Q / (known.C * known.m));
+    registerFormulaSolver("Q = C*m*(T2 - T1)", "T1", (known) => known.T2 - known.Q / (known.C * known.m));
+
+    // Q = λ*m
+    registerFormulaSolver("Q = λ*m", "Q", (known) => known.λ * known.m);
+    registerFormulaSolver("Q = λ*m", "λ", (known) => known.Q / known.m);
+    registerFormulaSolver("Q = λ*m", "m", (known) => known.Q / known.λ);
+
+    // Q = L*m
+    registerFormulaSolver("Q = L*m", "Q", (known) => known.L * known.m);
+    registerFormulaSolver("Q = L*m", "L", (known) => known.Q / known.m);
+    registerFormulaSolver("Q = L*m", "m", (known) => known.Q / known.L);
+
+    // Q = q*m
+    registerFormulaSolver("Q = q*m", "Q", (known) => known.q * known.m);
+    registerFormulaSolver("Q = q*m", "q", (known) => known.Q / known.m);
+    registerFormulaSolver("Q = q*m", "m", (known) => known.Q / known.q);
+
+    // P*V = (m/M)*R*T
+    registerFormulaSolver("P*V = (m/M)*R*T", "P", (known) => (known.m / known.M) * known.R * known.T / known.V);
+    registerFormulaSolver("P*V = (m/M)*R*T", "V", (known) => (known.m / known.M) * known.R * known.T / known.P);
+    registerFormulaSolver("P*V = (m/M)*R*T", "m", (known) => known.P * known.V * known.M / (known.R * known.T));
+    registerFormulaSolver("P*V = (m/M)*R*T", "M", (known) => known.m * known.R * known.T / (known.P * known.V));
+    registerFormulaSolver("P*V = (m/M)*R*T", "R", (known) => known.P * known.V * known.M / (known.m * known.T));
+    registerFormulaSolver("P*V = (m/M)*R*T", "T", (known) => known.P * known.V * known.M / (known.m * known.R));
+
+    // ΔU = A + Q
+    registerFormulaSolver("ΔU = A + Q", "ΔU", (known) => known.A + known.Q);
+    registerFormulaSolver("ΔU = A + Q", "A", (known) => known.ΔU - known.Q);
+    registerFormulaSolver("ΔU = A + Q", "Q", (known) => known.ΔU - known.A);
+
+    // η = (Q1 - Q2)/Q1
+    registerFormulaSolver("η = (Q1 - Q2)/Q1", "η", (known) => (known.Q1 - known.Q2) / known.Q1);
+    registerFormulaSolver("η = (Q1 - Q2)/Q1", "Q1", (known) => known.Q2 / (1 - known.η));
+    registerFormulaSolver("η = (Q1 - Q2)/Q1", "Q2", (known) => known.Q1 * (1 - known.η));
+
+    // η = (T1 - T2)/T1
+    registerFormulaSolver("η = (T1 - T2)/T1", "η", (known) => (known.T1 - known.T2) / known.T1);
+    registerFormulaSolver("η = (T1 - T2)/T1", "T1", (known) => known.T2 / (1 - known.η));
+    registerFormulaSolver("η = (T1 - T2)/T1", "T2", (known) => known.T1 * (1 - known.η));
+
+    // ---------- Электродинамика ----------
+    // I = U/R
+    registerFormulaSolver("I = U/R", "I", (known) => known.U / known.R);
+    registerFormulaSolver("I = U/R", "U", (known) => known.I * known.R);
+    registerFormulaSolver("I = U/R", "R", (known) => known.U / known.I);
+
+    // F = k*q1*q2/R^2
+    registerFormulaSolver("F = k*q1*q2/R^2", "F", (known) => known.k * known.q1 * known.q2 / Math.pow(known.R, 2));
+    registerFormulaSolver("F = k*q1*q2/R^2", "k", (known) => known.F * Math.pow(known.R, 2) / (known.q1 * known.q2));
+    registerFormulaSolver("F = k*q1*q2/R^2", "q1", (known) => known.F * Math.pow(known.R, 2) / (known.k * known.q2));
+    registerFormulaSolver("F = k*q1*q2/R^2", "q2", (known) => known.F * Math.pow(known.R, 2) / (known.k * known.q1));
+    registerFormulaSolver("F = k*q1*q2/R^2", "R", (known) => Math.sqrt(known.k * known.q1 * known.q2 / known.F) * (known.rootSign || 1));
+
+    // E = F/q
+    registerFormulaSolver("E = F/q", "E", (known) => known.F / known.q);
+    registerFormulaSolver("E = F/q", "F", (known) => known.E * known.q);
+    registerFormulaSolver("E = F/q", "q", (known) => known.F / known.E);
+
+    // E = k*q/R^2
+    registerFormulaSolver("E = k*q/R^2", "E", (known) => known.k * known.q / Math.pow(known.R, 2));
+    registerFormulaSolver("E = k*q/R^2", "k", (known) => known.E * Math.pow(known.R, 2) / known.q);
+    registerFormulaSolver("E = k*q/R^2", "q", (known) => known.E * Math.pow(known.R, 2) / known.k);
+    registerFormulaSolver("E = k*q/R^2", "R", (known) => Math.sqrt(known.k * known.q / known.E) * (known.rootSign || 1));
+
+    // σ = q/S
+    registerFormulaSolver("σ = q/S", "σ", (known) => known.q / known.S);
+    registerFormulaSolver("σ = q/S", "q", (known) => known.σ * known.S);
+    registerFormulaSolver("σ = q/S", "S", (known) => known.q / known.σ);
+
+    // E = 2*π*k*σ
+    registerFormulaSolver("E = 2*π*k*σ", "E", (known) => 2 * Math.PI * known.k * known.σ);
+    registerFormulaSolver("E = 2*π*k*σ", "k", (known) => known.E / (2 * Math.PI * known.σ));
+    registerFormulaSolver("E = 2*π*k*σ", "σ", (known) => known.E / (2 * Math.PI * known.k));
+
+    // ε = E0/E
+    registerFormulaSolver("ε = E0/E", "ε", (known) => known.E0 / known.E);
+    registerFormulaSolver("ε = E0/E", "E0", (known) => known.ε * known.E);
+    registerFormulaSolver("ε = E0/E", "E", (known) => known.E0 / known.ε);
+
+    // W = k*q1*q2/R
+    registerFormulaSolver("W = k*q1*q2/R", "W", (known) => known.k * known.q1 * known.q2 / known.R);
+    registerFormulaSolver("W = k*q1*q2/R", "k", (known) => known.W * known.R / (known.q1 * known.q2));
+    registerFormulaSolver("W = k*q1*q2/R", "q1", (known) => known.W * known.R / (known.k * known.q2));
+    registerFormulaSolver("W = k*q1*q2/R", "q2", (known) => known.W * known.R / (known.k * known.q1));
+    registerFormulaSolver("W = k*q1*q2/R", "R", (known) => known.k * known.q1 * known.q2 / known.W);
+
+    // φ = W/q
+    registerFormulaSolver("φ = W/q", "φ", (known) => known.W / known.q);
+    registerFormulaSolver("φ = W/q", "W", (known) => known.φ * known.q);
+    registerFormulaSolver("φ = W/q", "q", (known) => known.W / known.φ);
+
+    // φ = k*q/R
+    registerFormulaSolver("φ = k*q/R", "φ", (known) => known.k * known.q / known.R);
+    registerFormulaSolver("φ = k*q/R", "k", (known) => known.φ * known.R / known.q);
+    registerFormulaSolver("φ = k*q/R", "q", (known) => known.φ * known.R / known.k);
+    registerFormulaSolver("φ = k*q/R", "R", (known) => known.k * known.q / known.φ);
+
+    // U = A/q
+    registerFormulaSolver("U = A/q", "U", (known) => known.A / known.q);
+    registerFormulaSolver("U = A/q", "A", (known) => known.U * known.q);
+    registerFormulaSolver("U = A/q", "q", (known) => known.A / known.U);
+
+    // U = E*d
+    registerFormulaSolver("U = E*d", "U", (known) => known.E * known.d);
+    registerFormulaSolver("U = E*d", "E", (known) => known.U / known.d);
+    registerFormulaSolver("U = E*d", "d", (known) => known.U / known.E);
+
+    // C = q/U
+    registerFormulaSolver("C = q/U", "C", (known) => known.q / known.U);
+    registerFormulaSolver("C = q/U", "q", (known) => known.C * known.U);
+    registerFormulaSolver("C = q/U", "U", (known) => known.q / known.C);
+
+    // C = S*ε*ε0/d
+    registerFormulaSolver("C = S*ε*ε0/d", "C", (known) => known.S * known.ε * known.ε0 / known.d);
+    registerFormulaSolver("C = S*ε*ε0/d", "S", (known) => known.C * known.d / (known.ε * known.ε0));
+    registerFormulaSolver("C = S*ε*ε0/d", "ε", (known) => known.C * known.d / (known.S * known.ε0));
+    registerFormulaSolver("C = S*ε*ε0/d", "ε0", (known) => known.C * known.d / (known.S * known.ε));
+    registerFormulaSolver("C = S*ε*ε0/d", "d", (known) => known.S * known.ε * known.ε0 / known.C);
+
+    // W = C*U^2/2
+    registerFormulaSolver("W = C*U^2/2", "W", (known) => known.C * Math.pow(known.U, 2) / 2);
+    registerFormulaSolver("W = C*U^2/2", "C", (known) => 2 * known.W / Math.pow(known.U, 2));
+    registerFormulaSolver("W = C*U^2/2", "U", (known) => Math.sqrt(2 * known.W / known.C) * (known.rootSign || 1));
+
+    // I = q/t
+    registerFormulaSolver("I = q/t", "I", (known) => known.q / known.t);
+    registerFormulaSolver("I = q/t", "q", (known) => known.I * known.t);
+    registerFormulaSolver("I = q/t", "t", (known) => known.q / known.I);
+
+    // R = ρ*ℓ/S
+    registerFormulaSolver("R = ρ*ℓ/S", "R", (known) => known.ρ * known.ℓ / known.S);
+    registerFormulaSolver("R = ρ*ℓ/S", "ρ", (known) => known.R * known.S / known.ℓ);
+    registerFormulaSolver("R = ρ*ℓ/S", "ℓ", (known) => known.R * known.S / known.ρ);
+    registerFormulaSolver("R = ρ*ℓ/S", "S", (known) => known.ρ * known.ℓ / known.R);
+
+    // R = R1 + R2
+    registerFormulaSolver("R = R1 + R2", "R", (known) => known.R1 + known.R2);
+    registerFormulaSolver("R = R1 + R2", "R1", (known) => known.R - known.R2);
+    registerFormulaSolver("R = R1 + R2", "R2", (known) => known.R - known.R1);
+
+    // U = U1 + U2
+    registerFormulaSolver("U = U1 + U2", "U", (known) => known.U1 + known.U2);
+    registerFormulaSolver("U = U1 + U2", "U1", (known) => known.U - known.U2);
+    registerFormulaSolver("U = U1 + U2", "U2", (known) => known.U - known.U1);
+
+    // I1 = I2
+    registerFormulaSolver("I1 = I2", "I1", (known) => known.I2);
+    registerFormulaSolver("I1 = I2", "I2", (known) => known.I1);
+
+    // R = 1/(1/R1 + 1/R2)
+    registerFormulaSolver("R = 1/(1/R1 + 1/R2)", "R", (known) => 1 / (1/known.R1 + 1/known.R2));
+    registerFormulaSolver("R = 1/(1/R1 + 1/R2)", "R1", (known) => 1 / (1/known.R - 1/known.R2));
+    registerFormulaSolver("R = 1/(1/R1 + 1/R2)", "R2", (known) => 1 / (1/known.R - 1/known.R1));
+
+    // U1 = U2
+    registerFormulaSolver("U1 = U2", "U1", (known) => known.U2);
+    registerFormulaSolver("U1 = U2", "U2", (known) => known.U1);
+
+    // I = I1 + I2
+    registerFormulaSolver("I = I1 + I2", "I", (known) => known.I1 + known.I2);
+    registerFormulaSolver("I = I1 + I2", "I1", (known) => known.I - known.I2);
+    registerFormulaSolver("I = I1 + I2", "I2", (known) => known.I - known.I1);
+
+    // P = I*U
+    registerFormulaSolver("P = I*U", "P", (known) => known.I * known.U);
+    registerFormulaSolver("P = I*U", "I", (known) => known.P / known.U);
+    registerFormulaSolver("P = I*U", "U", (known) => known.P / known.I);
+
+    // Q = I^2*R*t
+    registerFormulaSolver("Q = I^2*R*t", "Q", (known) => Math.pow(known.I, 2) * known.R * known.t);
+    registerFormulaSolver("Q = I^2*R*t", "I", (known) => Math.sqrt(known.Q / (known.R * known.t)) * (known.rootSign || 1));
+    registerFormulaSolver("Q = I^2*R*t", "R", (known) => known.Q / (Math.pow(known.I, 2) * known.t));
+    registerFormulaSolver("Q = I^2*R*t", "t", (known) => known.Q / (Math.pow(known.I, 2) * known.R));
+
+    // I = ε/(R + r)
+    registerFormulaSolver("I = ε/(R + r)", "I", (known) => known.ε / (known.R + known.r));
+    registerFormulaSolver("I = ε/(R + r)", "ε", (known) => known.I * (known.R + known.r));
+    registerFormulaSolver("I = ε/(R + r)", "R", (known) => known.ε / known.I - known.r);
+    registerFormulaSolver("I = ε/(R + r)", "r", (known) => known.ε / known.I - known.R);
+
+    // I = ε/r
+    registerFormulaSolver("I = ε/r", "I", (known) => known.ε / known.r);
+    registerFormulaSolver("I = ε/r", "ε", (known) => known.I * known.r);
+    registerFormulaSolver("I = ε/r", "r", (known) => known.ε / known.I);
+
+    // B = Fmax/(I*ℓ)
+    registerFormulaSolver("B = Fmax/(I*ℓ)", "B", (known) => known.Fmax / (known.I * known.ℓ));
+    registerFormulaSolver("B = Fmax/(I*ℓ)", "Fmax", (known) => known.B * known.I * known.ℓ);
+    registerFormulaSolver("B = Fmax/(I*ℓ)", "I", (known) => known.Fmax / (known.B * known.ℓ));
+    registerFormulaSolver("B = Fmax/(I*ℓ)", "ℓ", (known) => known.Fmax / (known.B * known.I));
+
+    // Fa = I*B*ℓ*sin(α)
+    registerFormulaSolver("Fa = I*B*ℓ*sin(α)", "Fa", (known) => known.I * known.B * known.ℓ * Math.sin(known.α));
+    registerFormulaSolver("Fa = I*B*ℓ*sin(α)", "I", (known) => known.Fa / (known.B * known.ℓ * Math.sin(known.α)));
+    registerFormulaSolver("Fa = I*B*ℓ*sin(α)", "B", (known) => known.Fa / (known.I * known.ℓ * Math.sin(known.α)));
+    registerFormulaSolver("Fa = I*B*ℓ*sin(α)", "ℓ", (known) => known.Fa / (known.I * known.B * Math.sin(known.α)));
+    registerFormulaSolver("Fa = I*B*ℓ*sin(α)", "α", (known) => Math.asin(known.Fa / (known.I * known.B * known.ℓ)));
+
+    // Fл = B*q*υ*sin(α)
+    registerFormulaSolver("Fл = B*q*υ*sin(α)", "Fл", (known) => known.B * known.q * known.υ * Math.sin(known.α));
+    registerFormulaSolver("Fл = B*q*υ*sin(α)", "B", (known) => known.Fл / (known.q * known.υ * Math.sin(known.α)));
+    registerFormulaSolver("Fл = B*q*υ*sin(α)", "q", (known) => known.Fл / (known.B * known.υ * Math.sin(known.α)));
+    registerFormulaSolver("Fл = B*q*υ*sin(α)", "υ", (known) => known.Fл / (known.B * known.q * Math.sin(known.α)));
+    registerFormulaSolver("Fл = B*q*υ*sin(α)", "α", (known) => Math.asin(known.Fл / (known.B * known.q * known.υ)));
+
+    // Ф = B*S*cos(α)
+    registerFormulaSolver("Ф = B*S*cos(α)", "Ф", (known) => known.B * known.S * Math.cos(known.α));
+    registerFormulaSolver("Ф = B*S*cos(α)", "B", (known) => known.Ф / (known.S * Math.cos(known.α)));
+    registerFormulaSolver("Ф = B*S*cos(α)", "S", (known) => known.Ф / (known.B * Math.cos(known.α)));
+    registerFormulaSolver("Ф = B*S*cos(α)", "α", (known) => Math.acos(known.Ф / (known.B * known.S)));
+
+    // Ф = L*I
+    registerFormulaSolver("Ф = L*I", "Ф", (known) => known.L * known.I);
+    registerFormulaSolver("Ф = L*I", "L", (known) => known.Ф / known.I);
+    registerFormulaSolver("Ф = L*I", "I", (known) => known.Ф / known.L);
+
+    // Ei = ΔФ/Δt
+    registerFormulaSolver("Ei = ΔФ/Δt", "Ei", (known) => known.ΔФ / known.Δt);
+    registerFormulaSolver("Ei = ΔФ/Δt", "ΔФ", (known) => known.Ei * known.Δt);
+    registerFormulaSolver("Ei = ΔФ/Δt", "Δt", (known) => known.ΔФ / known.Ei);
+
+    // Ei = B*ℓ*υ*sin(α)
+    registerFormulaSolver("Ei = B*ℓ*υ*sin(α)", "Ei", (known) => known.B * known.ℓ * known.υ * Math.sin(known.α));
+    registerFormulaSolver("Ei = B*ℓ*υ*sin(α)", "B", (known) => known.Ei / (known.ℓ * known.υ * Math.sin(known.α)));
+    registerFormulaSolver("Ei = B*ℓ*υ*sin(α)", "ℓ", (known) => known.Ei / (known.B * known.υ * Math.sin(known.α)));
+    registerFormulaSolver("Ei = B*ℓ*υ*sin(α)", "υ", (known) => known.Ei / (known.B * known.ℓ * Math.sin(known.α)));
+    registerFormulaSolver("Ei = B*ℓ*υ*sin(α)", "α", (known) => Math.asin(known.Ei / (known.B * known.ℓ * known.υ)));
+
+    // Esi = -L*ΔI/Δt
+    registerFormulaSolver("Esi = -L*ΔI/Δt", "Esi", (known) => -known.L * known.ΔI / known.Δt);
+    registerFormulaSolver("Esi = -L*ΔI/Δt", "L", (known) => -known.Esi * known.Δt / known.ΔI);
+    registerFormulaSolver("Esi = -L*ΔI/Δt", "ΔI", (known) => -known.Esi * known.Δt / known.L);
+    registerFormulaSolver("Esi = -L*ΔI/Δt", "Δt", (known) => -known.L * known.ΔI / known.Esi);
+
+    // Wм = L*I^2/2
+    registerFormulaSolver("Wм = L*I^2/2", "Wм", (known) => known.L * Math.pow(known.I, 2) / 2);
+    registerFormulaSolver("Wм = L*I^2/2", "L", (known) => 2 * known.Wм / Math.pow(known.I, 2));
+    registerFormulaSolver("Wм = L*I^2/2", "I", (known) => Math.sqrt(2 * known.Wм / known.L) * (known.rootSign || 1));
+
+    // ---------- Колебания и волны ----------
+    // T = 2*π*√(ℓ/g)
+    registerFormulaSolver("T = 2*π*√(ℓ/g)", "T", (known) => 2 * Math.PI * Math.sqrt(known.ℓ / known.g));
+    registerFormulaSolver("T = 2*π*√(ℓ/g)", "ℓ", (known) => Math.pow(known.T / (2 * Math.PI), 2) * known.g);
+    registerFormulaSolver("T = 2*π*√(ℓ/g)", "g", (known) => Math.pow(2 * Math.PI / known.T, 2) * known.ℓ);
+
+    // T = 2*π*√(m/k)
+    registerFormulaSolver("T = 2*π*√(m/k)", "T", (known) => 2 * Math.PI * Math.sqrt(known.m / known.k));
+    registerFormulaSolver("T = 2*π*√(m/k)", "m", (known) => Math.pow(known.T / (2 * Math.PI), 2) * known.k);
+    registerFormulaSolver("T = 2*π*√(m/k)", "k", (known) => Math.pow(2 * Math.PI / known.T, 2) * known.m);
+
+    // X = Xmax*cos(ω*t)
+    registerFormulaSolver("X = Xmax*cos(ω*t)", "X", (known) => known.Xmax * Math.cos(known.ω * known.t));
+    registerFormulaSolver("X = Xmax*cos(ω*t)", "Xmax", (known) => known.X / Math.cos(known.ω * known.t));
+    registerFormulaSolver("X = Xmax*cos(ω*t)", "ω", (known) => Math.acos(known.X / known.Xmax) / known.t);
+    registerFormulaSolver("X = Xmax*cos(ω*t)", "t", (known) => Math.acos(known.X / known.Xmax) / known.ω);
+
+    // λ = υ*T
+    registerFormulaSolver("λ = υ*T", "λ", (known) => known.υ * known.T);
+    registerFormulaSolver("λ = υ*T", "υ", (known) => known.λ / known.T);
+    registerFormulaSolver("λ = υ*T", "T", (known) => known.λ / known.υ);
+
+    // T = 2*π*√(L*C)
+    registerFormulaSolver("T = 2*π*√(L*C)", "T", (known) => 2 * Math.PI * Math.sqrt(known.L * known.C));
+    registerFormulaSolver("T = 2*π*√(L*C)", "L", (known) => Math.pow(known.T / (2 * Math.PI), 2) / known.C);
+    registerFormulaSolver("T = 2*π*√(L*C)", "C", (known) => Math.pow(known.T / (2 * Math.PI), 2) / known.L);
+
+    // XL = 2*π*L*ν
+    registerFormulaSolver("XL = 2*π*L*ν", "XL", (known) => 2 * Math.PI * known.L * known.ν);
+    registerFormulaSolver("XL = 2*π*L*ν", "L", (known) => known.XL / (2 * Math.PI * known.ν));
+    registerFormulaSolver("XL = 2*π*L*ν", "ν", (known) => known.XL / (2 * Math.PI * known.L));
+
+    // Xc = 1/(2*π*ν*C)
+    registerFormulaSolver("Xc = 1/(2*π*ν*C)", "Xc", (known) => 1 / (2 * Math.PI * known.ν * known.C));
+    registerFormulaSolver("Xc = 1/(2*π*ν*C)", "ν", (known) => 1 / (2 * Math.PI * known.Xc * known.C));
+    registerFormulaSolver("Xc = 1/(2*π*ν*C)", "C", (known) => 1 / (2 * Math.PI * known.ν * known.Xc));
+
+    // Iд = Imax/√(2)
+    registerFormulaSolver("Iд = Imax/√(2)", "Iд", (known) => known.Imax / Math.sqrt(2));
+    registerFormulaSolver("Iд = Imax/√(2)", "Imax", (known) => known.Iд * Math.sqrt(2));
+
+    // Uд = Umax/√(2)
+    registerFormulaSolver("Uд = Umax/√(2)", "Uд", (known) => known.Umax / Math.sqrt(2));
+    registerFormulaSolver("Uд = Umax/√(2)", "Umax", (known) => known.Uд * Math.sqrt(2));
+
+    // Z = √((Xc - XL)^2 + R^2)
+    registerFormulaSolver("Z = √((Xc - XL)^2 + R^2)", "Z", (known) => Math.sqrt(Math.pow(known.Xc - known.XL, 2) + Math.pow(known.R, 2)));
+    registerFormulaSolver("Z = √((Xc - XL)^2 + R^2)", "Xc", (known) => known.XL + Math.sqrt(Math.pow(known.Z, 2) - Math.pow(known.R, 2)));
+    registerFormulaSolver("Z = √((Xc - XL)^2 + R^2)", "XL", (known) => known.Xc - Math.sqrt(Math.pow(known.Z, 2) - Math.pow(known.R, 2)));
+    registerFormulaSolver("Z = √((Xc - XL)^2 + R^2)", "R", (known) => Math.sqrt(Math.pow(known.Z, 2) - Math.pow(known.Xc - known.XL, 2)));
+
+    // ---------- Оптика ----------
+    // n21 = n2/n1
+    registerFormulaSolver("n21 = n2/n1", "n21", (known) => known.n2 / known.n1);
+    registerFormulaSolver("n21 = n2/n1", "n2", (known) => known.n21 * known.n1);
+    registerFormulaSolver("n21 = n2/n1", "n1", (known) => known.n2 / known.n21);
+
+    // n21 = sin(α)/sin(γ)
+    registerFormulaSolver("n21 = sin(α)/sin(γ)", "n21", (known) => Math.sin(known.α) / Math.sin(known.γ));
+    registerFormulaSolver("n21 = sin(α)/sin(γ)", "α", (known) => Math.asin(known.n21 * Math.sin(known.γ)));
+    registerFormulaSolver("n21 = sin(α)/sin(γ)", "γ", (known) => Math.asin(Math.sin(known.α) / known.n21));
+
+    // 1/F = 1/d + 1/f
+    registerFormulaSolver("1/F = 1/d + 1/f", "F", (known) => 1 / (1/known.d + 1/known.f));
+    registerFormulaSolver("1/F = 1/d + 1/f", "d", (known) => 1 / (1/known.F - 1/known.f));
+    registerFormulaSolver("1/F = 1/d + 1/f", "f", (known) => 1 / (1/known.F - 1/known.d));
+
+    // D = 1/F
+    registerFormulaSolver("D = 1/F", "D", (known) => 1 / known.F);
+    registerFormulaSolver("D = 1/F", "F", (known) => 1 / known.D);
+
+    // Δd = k*λ
+    registerFormulaSolver("Δd = k*λ", "Δd", (known) => known.k * known.λ);
+    registerFormulaSolver("Δd = k*λ", "k", (known) => known.Δd / known.λ);
+    registerFormulaSolver("Δd = k*λ", "λ", (known) => known.Δd / known.k);
+
+    // Δd = (2k+1)*λ/2
+    registerFormulaSolver("Δd = (2k+1)*λ/2", "Δd", (known) => (2*known.k + 1) * known.λ / 2);
+    registerFormulaSolver("Δd = (2k+1)*λ/2", "k", (known) => (2*known.Δd / known.λ - 1) / 2);
+    registerFormulaSolver("Δd = (2k+1)*λ/2", "λ", (known) => 2 * known.Δd / (2*known.k + 1));
+
+    // d*sin(φ) = k*λ
+    registerFormulaSolver("d*sin(φ) = k*λ", "d", (known) => known.k * known.λ / Math.sin(known.φ));
+    registerFormulaSolver("d*sin(φ) = k*λ", "sin(φ)", (known) => known.k * known.λ / known.d);
+    registerFormulaSolver("d*sin(φ) = k*λ", "k", (known) => known.d * Math.sin(known.φ) / known.λ);
+    registerFormulaSolver("d*sin(φ) = k*λ", "λ", (known) => known.d * Math.sin(known.φ) / known.k);
+    registerFormulaSolver("d*sin(φ) = k*λ", "φ", (known) => Math.asin(known.k * known.λ / known.d));
+
+    // ---------- Квантовая физика ----------
+    // h*ν = Aвых + Ek
+    registerFormulaSolver("h*ν = Aвых + Ek", "h", (known) => (known.Aвых + known.Ek) / known.ν);
+    registerFormulaSolver("h*ν = Aвых + Ek", "ν", (known) => (known.Aвых + known.Ek) / known.h);
+    registerFormulaSolver("h*ν = Aвых + Ek", "Aвых", (known) => known.h * known.ν - known.Ek);
+    registerFormulaSolver("h*ν = Aвых + Ek", "Ek", (known) => known.h * known.ν - known.Aвых);
+
+    // νк = Aвых/h
+    registerFormulaSolver("νк = Aвых/h", "νк", (known) => known.Aвых / known.h);
+    registerFormulaSolver("νк = Aвых/h", "Aвых", (known) => known.νк * known.h);
+    registerFormulaSolver("νк = Aвых/h", "h", (known) => known.Aвых / known.νк);
+
+    // P = h/λ
+    registerFormulaSolver("P = h/λ", "P", (known) => known.h / known.λ);
+    registerFormulaSolver("P = h/λ", "h", (known) => known.P * known.λ);
+    registerFormulaSolver("P = h/λ", "λ", (known) => known.h / known.P);
+
+    // P = E/c
+    registerFormulaSolver("P = E/c", "P", (known) => known.E / known.c);
+    registerFormulaSolver("P = E/c", "E", (known) => known.P * known.c);
+    registerFormulaSolver("P = E/c", "c", (known) => known.E / known.P);
+
+    // N = N0*2^(-t/T)
+    registerFormulaSolver("N = N0*2^(-t/T)", "N", (known) => known.N0 * Math.pow(2, -known.t / known.T));
+    registerFormulaSolver("N = N0*2^(-t/T)", "N0", (known) => known.N / Math.pow(2, -known.t / known.T));
+    registerFormulaSolver("N = N0*2^(-t/T)", "t", (known) => -known.T * Math.log2(known.N / known.N0));
+    registerFormulaSolver("N = N0*2^(-t/T)", "T", (known) => -known.t / Math.log2(known.N / known.N0));
+
+    // Eсв = (Z*mp + N*mn - Mя)*c^2
+    registerFormulaSolver("Eсв = (Z*mp + N*mn - Mя)*c^2", "Eсв", (known) => (known.Z * known.mp + known.N * known.mn - known.Mя) * Math.pow(known.c, 2));
+    registerFormulaSolver("Eсв = (Z*mp + N*mn - Mя)*c^2", "Z", (known) => (known.Eсв / Math.pow(known.c, 2) - known.N * known.mn + known.Mя) / known.mp);
+    registerFormulaSolver("Eсв = (Z*mp + N*mn - Mя)*c^2", "N", (known) => (known.Eсв / Math.pow(known.c, 2) - known.Z * known.mp + known.Mя) / known.mn);
+    registerFormulaSolver("Eсв = (Z*mp + N*mn - Mя)*c^2", "Mя", (known) => known.Z * known.mp + known.N * known.mn - known.Eсв / Math.pow(known.c, 2));
+    registerFormulaSolver("Eсв = (Z*mp + N*mn - Mя)*c^2", "c", (known) => Math.sqrt(known.Eсв / (known.Z * known.mp + known.N * known.mn - known.Mя)));
+
+    // ---------- СТО ----------
+    // t = t1/√(1 - υ^2/c^2)
+    registerFormulaSolver("t = t1/√(1 - υ^2/c^2)", "t", (known) => known.t1 / Math.sqrt(1 - Math.pow(known.υ, 2) / Math.pow(known.c, 2)));
+    registerFormulaSolver("t = t1/√(1 - υ^2/c^2)", "t1", (known) => known.t * Math.sqrt(1 - Math.pow(known.υ, 2) / Math.pow(known.c, 2)));
+    registerFormulaSolver("t = t1/√(1 - υ^2/c^2)", "υ", (known) => known.c * Math.sqrt(1 - Math.pow(known.t1 / known.t, 2)));
+    registerFormulaSolver("t = t1/√(1 - υ^2/c^2)", "c", (known) => known.υ / Math.sqrt(1 - Math.pow(known.t1 / known.t, 2)));
+
+    // ℓ = ℓ0*√(1 - υ^2/c^2)
+    registerFormulaSolver("ℓ = ℓ0*√(1 - υ^2/c^2)", "ℓ", (known) => known.ℓ0 * Math.sqrt(1 - Math.pow(known.υ, 2) / Math.pow(known.c, 2)));
+    registerFormulaSolver("ℓ = ℓ0*√(1 - υ^2/c^2)", "ℓ0", (known) => known.ℓ / Math.sqrt(1 - Math.pow(known.υ, 2) / Math.pow(known.c, 2)));
+    registerFormulaSolver("ℓ = ℓ0*√(1 - υ^2/c^2)", "υ", (known) => known.c * Math.sqrt(1 - Math.pow(known.ℓ / known.ℓ0, 2)));
+    registerFormulaSolver("ℓ = ℓ0*√(1 - υ^2/c^2)", "c", (known) => known.υ / Math.sqrt(1 - Math.pow(known.ℓ / known.ℓ0, 2)));
+
+    // υ2 = (υ1 + υ)/(1 + υ1*υ/c^2)
+    registerFormulaSolver("υ2 = (υ1 + υ)/(1 + υ1*υ/c^2)", "υ2", (known) => (known.υ1 + known.υ) / (1 + known.υ1 * known.υ / Math.pow(known.c, 2)));
+    registerFormulaSolver("υ2 = (υ1 + υ)/(1 + υ1*υ/c^2)", "υ1", (known) => (known.υ2 - known.υ) / (1 - known.υ2 * known.υ / Math.pow(known.c, 2)));
+    registerFormulaSolver("υ2 = (υ1 + υ)/(1 + υ1*υ/c^2)", "υ", (known) => (known.υ2 - known.υ1) / (1 - known.υ2 * known.υ1 / Math.pow(known.c, 2)));
+    registerFormulaSolver("υ2 = (υ1 + υ)/(1 + υ1*υ/c^2)", "c", (known) => Math.sqrt(Math.abs(known.υ1 * known.υ * (known.υ2 - known.υ1 - known.υ) / (known.υ2 - known.υ1 - known.υ + 1))));
+
+    // E = m*c^2
+    registerFormulaSolver("E = m*c^2", "E", (known) => known.m * Math.pow(known.c, 2));
+    registerFormulaSolver("E = m*c^2", "m", (known) => known.E / Math.pow(known.c, 2));
+    registerFormulaSolver("E = m*c^2", "c", (known) => Math.sqrt(known.E / known.m));
 
 }
 
 // ---------- Функция получения решателя для блока ----------
-function getSolverFunction(formulaEq, targetVar, isCustom = false, operation = null) {
-    if (isCustom) {
-        // Кастомные арифметические блоки
-        return (known) => {
-            const inVal = known.in;
-            const coeffVal = known.coeff;
-            if (inVal === undefined || coeffVal === undefined) return null;
-            switch (operation) {
-                case '+': return inVal + coeffVal;
-                case '-': return inVal - coeffVal;
-                case '*': return inVal * coeffVal;
-                case '/': return coeffVal !== 0 ? inVal / coeffVal : null;
-                default: return null;
-            }
-        };
-    }
+function getSolverFunction(formulaEq, targetVar) {
     const forEq = formulaSolverRegistry.get(formulaEq);
     if (forEq?.has(targetVar)) return forEq.get(targetVar);
-    // Заглушка с предупреждением (один раз)
     let warned = false;
     return (known) => {
         if (!warned) {
@@ -1550,310 +1553,6 @@ function createFormulaBlock(formulaEq, formulaName, varsArray, left, top, id = n
 }
 
 /**
- * Создаёт специальный блок «Арифметический оператор».
- * @param {number} left - Позиция X.
- * @param {number} top - Позиция Y.
- * @param {number|null} id - ID блока (опционально).
- * @param {string} operation - Операция: '+', '-', '*', '/'.
- * @param {string|number} coeffValue - Начальное значение коэффициента.
- * @returns {number} ID созданного блока.
- */
-function createCustomBlock(left, top, id = null, operation = '+', coeffValue = '') {
-    const rectId = id === null ? nextRectId++ : id;
-    const rectDiv = document.createElement('div');
-    rectDiv.className = 'formula-card';
-    rectDiv.style.left = `${left}px`;
-    rectDiv.style.top = `${top}px`;
-    rectDiv.dataset.id = rectId;
-    rectDiv.title = 'Арифметический оператор';
-
-    rectDiv.innerHTML = `
-        <div class="card-header">
-            <div class="formula-text">out = in <span id="opSelect-${rectId}">${operation}</span> coeff</div>
-            <div class="delete-card">✕</div>
-        </div>
-        <div class="params-list">
-            <div class="param-row">
-                <div class="port" data-param="in"></div>
-                <div class="param-name">in</div>
-                <div class="param-value">
-                    <input class="param-input" type="number" placeholder="число или связь" id="inInput-${rectId}">
-                </div>
-            </div>
-            <div class="param-row">
-                <div class="param-name" style="margin-left:26px;">coeff</div>
-                <div class="param-value">
-                    <input class="param-input" type="number" placeholder="коэффициент" id="coeffInput-${rectId}" value="${escapeHtml(String(coeffValue))}">
-                </div>
-            </div>
-        </div>
-        <div class="target-area" data-target-var="out">
-            <div class="target-output">
-                <div class="target-symbol">out</div>
-                <div class="target-value">?</div>
-            </div>
-            <div class="target-port"></div>
-        </div>
-    `;
-
-    rectLayer.appendChild(rectDiv);
-    
-    const rectData = {
-        id: rectId,
-        element: rectDiv,
-        isCustom: true,
-        formulaName: 'Арифметический оператор',
-        vars: ['out', 'in', 'coeff'],
-        targetVar: 'out',
-        manualValues: { in: '', coeff: String(coeffValue) },
-        operation: operation,
-        computedValue: null,
-        rootSign: 1,
-        solverFunc: getSolverFunction(null, null, true, operation)
-    };
-    rectangles.set(rectId, rectData);
-
-    const inInput = rectDiv.querySelector(`#inInput-${rectId}`);
-    const coeffInput = rectDiv.querySelector(`#coeffInput-${rectId}`);
-
-    inInput.addEventListener('input', (e) => {
-        rectData.manualValues.in = e.target.value;
-    });
-    coeffInput.addEventListener('input', (e) => {
-        rectData.manualValues.coeff = e.target.value;
-    });
-
-    if (rectData.manualValues.in) inInput.value = rectData.manualValues.in;
-    if (rectData.manualValues.coeff) coeffInput.value = rectData.manualValues.coeff;
-
-    const inPort = rectDiv.querySelector('.port');
-    inPort.addEventListener('click', (e) => {
-        e.stopPropagation();
-        handlePortClick(rectId, 'in', false);
-    });
-
-    const outPort = rectDiv.querySelector('.target-port');
-    outPort.addEventListener('click', (e) => {
-        e.stopPropagation();
-        handlePortClick(rectId, 'out', true);
-    });
-
-    const deleteBtn = rectDiv.querySelector('.delete-card');
-    deleteBtn.addEventListener('click', (e) => { e.stopPropagation(); deleteRectangle(rectId); });
-
-    makeDraggable(rectDiv, rectId);
-    return rectId;
-}
-
-function createGraphBlock(graphContext) {
-    const blockId = nextRectId++;
-    const blockDiv = document.createElement('div');
-    blockDiv.className = 'formula-card graph-card';
-    blockDiv.style.left = '100px';
-    blockDiv.style.top = '100px';
-    blockDiv.style.width = '500px';
-    blockDiv.style.height = '500px';
-    blockDiv.dataset.id = blockId;
-
-    blockDiv.innerHTML = `
-        <div class="card-header" style="cursor:move;">
-            <span>График ${graphContext.yLabel}(${graphContext.xLabel})</span>
-            <div class="delete-card" style="cursor:pointer;">✕</div>
-        </div>
-        <div class="graph-canvas-wrapper" style="overflow:hidden; position:relative;">
-            <canvas style="width:100%; height:100%; display:block;"></canvas>
-        </div>
-    `;
-    
-    graphLayer.appendChild(blockDiv);
-
-    const canvas = blockDiv.querySelector('canvas');
-    const wrapper = blockDiv.querySelector('.graph-canvas-wrapper');
-
-    // Генерируем точки один раз (но теперь быстро)
-    const pointsCount = 2000;
-    const xMin = -100, xMax = 100;
-    const points = [];
-    for (let i = 0; i <= pointsCount; i++) {
-        const x = xMin + (i / pointsCount) * (xMax - xMin);
-        let y;
-        try {
-            y = graphContext.evalFunction(x);
-        } catch (e) {
-            y = null;
-        }
-        points.push({ x, y: (y !== null && isFinite(y) && !isNaN(y)) ? y : null });
-    }
-
-    const state = {
-        points: points,
-        xMin: -100,
-        xMax: 100,
-        yMin: -100,
-        yMax: 100
-    };
-
-    const blockData = {
-        id: blockId,
-        element: blockDiv,
-        canvas,
-        wrapper,
-        graphContext,
-        state,
-        observer: null
-    };
-    graphBlocks.set(blockId, blockData);
-
-    // Функция перерисовки
-    const redraw = () => drawGraphInBlock(blockData);
-
-    // Подгонка размеров canvas при изменении размера wrapper
-    const resizeObserver = new ResizeObserver(() => {
-        const w = wrapper.clientWidth;
-        const h = wrapper.clientHeight;
-        if (canvas.width !== w || canvas.height !== h) {
-            canvas.width = w;
-            canvas.height = h;
-        }
-        redraw();
-    });
-    resizeObserver.observe(wrapper);
-    blockData.observer = resizeObserver;
-
-    // ---- 1. Прокрутка правой кнопкой мыши (панорамирование) ----
-    let isPanning = false;
-    let panStartX = 0, panStartY = 0;
-    let panStartXMin = 0, panStartXMax = 0;
-    let panStartYMin = 0, panStartYMax = 0;
-
-    // Отключаем браузерное контекстное меню на канвасе
-    canvas.addEventListener('contextmenu', (e) => e.preventDefault());
-
-    // Начало панорамирования (правая кнопка)
-    canvas.addEventListener('mousedown', (e) => {
-        if (e.button === 0) // средняя кнопка
-            e.preventDefault();
-        else
-            return;
-        isPanning = true;
-        panStartX = e.clientX;
-        panStartY = e.clientY;
-        panStartXMin = state.xMin;
-        panStartXMax = state.xMax;
-        panStartYMin = state.yMin;
-        panStartYMax = state.yMax;
-    });
-
-    // Движение мыши при панорамировании
-    window.addEventListener('mousemove', (e) => {
-        if (!isPanning) return;
-        const dx = e.clientX - panStartX;
-        const dy = e.clientY - panStartY;
-
-        const rangeX = panStartXMax - panStartXMin;
-        const rangeY = panStartYMax - panStartYMin;
-
-        // Перевод смещения пикселей в единицы графика
-        const scaleX = rangeX / canvas.clientWidth;
-        const scaleY = rangeY / canvas.clientHeight;
-
-        let newXMin = panStartXMin - dx * scaleX;
-        let newXMax = panStartXMax - dx * scaleX;
-        let newYMin = panStartYMin + dy * scaleY;   // ось Y перевёрнута в canvas
-        let newYMax = panStartYMax + dy * scaleY;
-
-        // Ограничение: не выходить за -100..100
-        // Сдвигаем второй край, чтобы сохранить диапазон при упоре в ограничение
-        if (newXMin < -100) {
-            const shift = -100 - newXMin;
-            newXMin = -100;
-            newXMax += shift;
-        }
-        if (newXMax > 100) {
-            const shift = newXMax - 100;
-            newXMax = 100;
-            newXMin -= shift;
-        }
-        if (newYMin < -100) {
-            const shift = -100 - newYMin;
-            newYMin = -100;
-            newYMax += shift;
-        }
-        if (newYMax > 100) {
-            const shift = newYMax - 100;
-            newYMax = 100;
-            newYMin -= shift;
-        }
-
-        state.xMin = newXMin;
-        state.xMax = newXMax;
-        state.yMin = newYMin;
-        state.yMax = newYMax;
-
-        redraw();
-    });
-
-    // Отпускание правой кнопки (где угодно)
-    window.addEventListener('mouseup', (e) => {
-        if (e.button === 0) {
-            isPanning = false;
-            e.preventDefault();
-        }
-    });
-
-    // ---- 2. Масштабирование колесом относительно курсора ----
-    canvas.addEventListener('wheel', (e) => {
-        e.preventDefault();
-        const delta = e.deltaY > 0 ? 1 : -1;
-        const factor = delta < 0 ? 0.9 : 1.1;   // колесо вперёд (приближение)
-
-        // Координаты мыши относительно canvas
-        const rect = canvas.getBoundingClientRect();
-        const mouseX = e.clientX - rect.left;
-        const mouseY = e.clientY - rect.top;
-
-        // Паддинги, используемые при отрисовке графика
-        const padding = { left: 50, right: 50, top: 50, bottom: 50 };
-        const graphWidth = canvas.width - padding.left - padding.right;
-        const graphHeight = canvas.height - padding.top - padding.bottom;
-
-        // Перевод координат мыши в мировые (графические) координаты
-        const centerX = state.xMin + ((mouseX - padding.left) / graphWidth) * (state.xMax - state.xMin);
-        const centerY = state.yMin + ((graphHeight - (mouseY - padding.top)) / graphHeight) * (state.yMax - state.yMin);
-
-        // Новые диапазоны после масштабирования
-        let newXRange = (state.xMax - state.xMin) * factor;
-        let newYRange = (state.yMax - state.yMin) * factor;
-
-        // Сохраняем положение точки под курсором (масштабирование относительно неё)
-        const ratioX = (centerX - state.xMin) / (state.xMax - state.xMin);
-        const ratioY = (centerY - state.yMin) / (state.yMax - state.yMin);
-
-        // Ограничения по осям: края не должны выходить за -100 и 100
-        
-        state.xMin = Math.max(-100, Math.min(-1, centerX - newXRange * ratioX));
-        state.xMax = Math.min( 100, Math.max( 1, centerX + newXRange * (1 - ratioX)));
-        state.yMin = Math.max(-100, Math.min(-1, centerY - newYRange * ratioY));
-        state.yMax = Math.min( 100, Math.max( 1, centerY + newYRange * (1 - ratioY)));
-
-        redraw();
-    });
-
-    // Удаление по крестику
-    blockDiv.querySelector('.delete-card').addEventListener('click', (e) => {
-        e.stopPropagation();
-        deleteGraphBlock(blockId);
-    });
-
-    // Перетаскивание блока (исключая canvas)
-    makeGraphBlockDraggable(blockDiv);
-
-    // Первая отрисовка
-    setTimeout(redraw, 20);
-    return blockId;
-}
-
-/**
  * Обрабатывает клик по порту (входному или выходному) в режиме соединения.
  * @param {number} rectId - ID блока.
  * @param {string} param - Имя параметра.
@@ -1906,8 +1605,7 @@ function handlePortClick(rectId, param, isOutput) {
 function deleteRectangle(rectId) {
     const rect = rectangles.get(rectId);
     if (!rect) return;
-
-    connectionForDelete = [];
+    
     paramConnections.reverse().forEach((conn, idx) => {
         if (conn.sourceRectId === rectId || conn.targetRectId === rectId)
             removeParamConnection(idx);
@@ -1931,10 +1629,10 @@ function deleteRectangle(rectId) {
  * @param {number} blockId 
  */
 function deleteGraphBlock(blockId) {
-    const data = graphBlocks.get(blockId);
-    if (!data) return;
-    if (data.observer) data.observer.disconnect();
-    data.element.remove();
+    const blockData = graphBlocks.get(blockId);
+    if (!blockData) return;
+    if (blockData.observer) blockData.observer.disconnect();
+    if (blockData.element) blockData.element.remove();
     graphBlocks.delete(blockId);
 }
 
@@ -2055,19 +1753,8 @@ function setupDragDrop() {
         let x = coords.x - 145, y = coords.y - 70;
         x = Math.max(10, Math.min(x, graphArea.clientWidth - 290));
         y = Math.max(10, Math.min(y, graphArea.clientHeight - 200));
-        if (data.name === "Арифметический оператор") {
-            if (data.eq.includes('+')) {
-                createCustomBlock(x, y, null, '+');
-            } else if (data.eq.includes('-')) {
-                createCustomBlock(x, y, null, '-');
-            } else if (data.eq.includes('*')) {
-                createCustomBlock(x, y, null, '*');
-            } else if (data.eq.includes('/')) {
-                createCustomBlock(x, y, null, '/');
-            }
-        } else {
-            createFormulaBlock(data.eq, data.name, data.vars, x, y);
-        }
+        // Все блоки создаём одинаково
+        createFormulaBlock(data.eq, data.name, data.vars, x, y);
         redrawParamLines();
     });
 }
@@ -2164,7 +1851,7 @@ function serializeState() {
         const rectEl = rect.element;
         const blockData = {
             id: rect.id,
-            formulaEq: rect.formulaEq || (rect.isCustom ? 'out = in ? coeff' : ''),
+            formulaEq: rect.formulaEq || '',
             formulaName: rect.formulaName,
             vars: rect.vars,
             left: Number.parseFloat(rectEl.style.left),
@@ -2172,10 +1859,6 @@ function serializeState() {
             targetVar: rect.targetVar,
             manualValues: rect.manualValues
         };
-        if (rect.isCustom) {
-            blockData.isCustom = true;
-            blockData.operation = rect.operation;
-        }
         blocks.push(blockData);
     }
     return {
@@ -2200,35 +1883,16 @@ function deserializeState(state) {
     
     // Сначала создаём все блоки (без связей, т.к. связи будут добавлены позже)
     for (let block of state.blocks) {
-        if (block.isCustom) {
-            createCustomBlock(
-                block.left,
-                block.top,
-                block.id,
-                block.operation,
-                block.manualValues?.coeff || ''
-            );
-            // Восстанавливаем ручное значение in, если оно есть (уже внутри createCustomBlock через manualValues)
-            const rect = rectangles.get(block.id);
-            if (rect && block.manualValues) {
-                rect.manualValues = { ...block.manualValues };
-                const inInput = rect.element.querySelector(`#inInput-${block.id}`);
-                if (inInput) inInput.value = rect.manualValues.in || '';
-                const coeffInput = rect.element.querySelector(`#coeffInput-${block.id}`);
-                if (coeffInput) coeffInput.value = rect.manualValues.coeff || '';
-            }
-        } else {
-            createFormulaBlock(
-                block.formulaEq,
-                block.formulaName,
-                block.vars,
-                block.left,
-                block.top,
-                block.id,
-                block.targetVar,
-                block.manualValues
-            );
-        }
+        createFormulaBlock(
+            block.formulaEq,
+            block.formulaName,
+            block.vars,
+            block.left,
+            block.top,
+            block.id,
+            block.targetVar,
+            block.manualValues
+        );
     }
     
     // Восстанавливаем связи
@@ -2545,73 +2209,24 @@ function prepareGraphEvaluation(startSpec, endSpec) {
         return { canCompute: false, errorMessage: "Цикл в подграфе графика" };
     }
     
-    // Функция вычисления Y по X
-    const evalFunction = (x) => {
-        // Сохраняем состояние startRect
-        const originalManual = startRect.manualValues[startSpec.paramName];
-        const originalConn = paramConnections.find(c => c.targetRectId === startSpec.rectId && c.targetParam === startSpec.paramName);
-        const connIndex = originalConn ? paramConnections.indexOf(originalConn) : -1;
-        if (originalConn) paramConnections.splice(connIndex, 1);
-        startRect.manualValues[startSpec.paramName] = String(x);
-        
-        // Сбрасываем computed значения для нужных блоков
-        const savedValues = new Map();
-        for (let id of needed) {
-            const rect = rectangles.get(id);
-            savedValues.set(id, rect.computedValue);
-            rect.computedValue = null;
+    // Собираем неоднозначные блоки в подграфе (те, у которых rootSign влияет на результат)
+    const ambiguousBlocks = [];
+    for (let id of needed) {
+        const rect = rectangles.get(id);
+        // Определяем, есть ли в формуле неоднозначность: наличие sqrt, ^2
+        if (rect.formulaEq.includes('√') || rect.formulaEq.includes('^2') || rect.formulaEq.includes('**2')) {
+            ambiguousBlocks.push(rect);
         }
-        
-        // Вычисляем в топологическом порядке
-        for (let id of order) {
-            const rect = rectangles.get(id);
-            const inputs = {};
-            let ok = true;
-            for (let v of rect.vars) {
-                if (v === rect.targetVar) continue;
-                const conn = paramConnections.find(c => c.targetRectId === id && c.targetParam === v);
-                if (conn) {
-                    const src = rectangles.get(conn.sourceRectId);
-                    if (src && src.computedValue !== null) inputs[v] = src.computedValue;
-                    else { ok = false; break; }
-                } else {
-                    const man = rect.manualValues[v];
-                    if (man !== undefined && man.trim() !== '' && !isNaN(parseFloat(man))) inputs[v] = parseFloat(man);
-                    else { ok = false; break; }
-                }
-            }
-            if (!ok) continue;
-            if (rect.solverFunc) {
-                const res = rect.solverFunc(inputs);
-                if (res !== null && isFinite(res)) rect.computedValue = res;
-            }
-        }
-        
-        let y = null;
-        if (endSpec.isOutput) {
-            y = endRect.computedValue;
-        } else {
-            const conn = paramConnections.find(c => c.targetRectId === endSpec.rectId && c.targetParam === endSpec.paramName);
-            if (conn) {
-                const src = rectangles.get(conn.sourceRectId);
-                y = src ? src.computedValue : null;
-            } else {
-                const man = endRect.manualValues[endSpec.paramName];
-                if (man !== undefined && man.trim() !== '' && !isNaN(parseFloat(man))) y = parseFloat(man);
-            }
-        }
-        
-        // Восстановление состояния
-        if (originalConn) paramConnections.push(originalConn);
-        else delete startRect.manualValues[startSpec.paramName];
-        if (originalManual !== undefined) startRect.manualValues[startSpec.paramName] = originalManual;
-        for (let id of needed) {
-            const rect = rectangles.get(id);
-            rect.computedValue = savedValues.get(id);
-        }
-        return (y !== null && isFinite(y)) ? y : null;
+    }
+    
+    return { 
+        canCompute: true, 
+        order: order, 
+        needed: needed, 
+        ambiguousBlocks: ambiguousBlocks, 
+        startRect: startRect, 
+        endRect: endRect 
     };
-    return { canCompute: true, evalFunction };
 }
 
 async function buildGraph(startSpec, endSpec) {
@@ -2620,44 +2235,195 @@ async function buildGraph(startSpec, endSpec) {
         alert(preparation.errorMessage);
         return;
     }
-    const graphContext = {
-        mode: 'numeric',
-        evalFunction: preparation.evalFunction,
-        startSpec: startSpec,
-        endSpec: endSpec,
-        xLabel: startSpec.paramName,
-        yLabel: endSpec.paramName,
-    };
-    createGraphBlock(graphContext);
-}
-
-/**
- * Генерирует массив точек для всего диапазона X от -50 до 50.
- * Вызывается ОДИН раз при открытии окна графика.
- */
-function generateInitialPoints(graphContext, pointsCount = 100) {
-    const points = [];
+    const { order, needed, ambiguousBlocks, startRect, endRect } = preparation;
+    
+    const blockId = nextRectId++;
+    const blockDiv = document.createElement('div');
+    blockDiv.className = 'formula-card graph-card';
+    blockDiv.style.left = '100px';
+    blockDiv.style.top = '100px';
+    blockDiv.style.width = '550px';
+    blockDiv.style.height = '550px';
+    blockDiv.dataset.id = blockId;
+    
+    const k = ambiguousBlocks.length;
+    const totalBranches = k === 0 ? 1 : (1 << k);
+    const branchInfo = k > 0 ? `<span style="font-size:10px; margin-left:10px;">(${totalBranches} веток)</span>` : '';
+    
+    blockDiv.innerHTML = `
+        <div class="card-header" style="cursor:move;">
+            <div class="formula-text" style="font-weight: normal;">
+                График ${endSpec.paramName}(${startSpec.paramName})${branchInfo}
+            </div>
+            <div class="delete-card" style="cursor:pointer;">✕</div>
+        </div>
+        <div class="graph-canvas-wrapper" style="overflow:hidden; position:relative;">
+            <canvas style="width:100%; height:100%; display:block;"></canvas>
+        </div>
+    `;
+    graphLayer.appendChild(blockDiv);
+    
+    const canvas = blockDiv.querySelector('canvas');
+    const wrapper = blockDiv.querySelector('.graph-canvas-wrapper');
+    const pointsCount = 2000;
     const xMin = -100, xMax = 100;
-    if (graphContext.mode === 'analytic' && graphContext.analyticFn) {
-        for (let i = 0; i <= pointsCount; i++) {
-            const x = xMin + (i / pointsCount) * (xMax - xMin);
-            let y;
-            try {
-                y = graphContext.analyticFn(x);
-            } catch (e) {
-                y = null;
-            }
-            points.push({ x, y: (y !== null && isFinite(y) && !isNaN(y)) ? y : null });
-        }
+    
+    // Готовим массивы X
+    const xValues = [];
+    for (let i = 0; i <= pointsCount; i++) {
+        xValues.push(xMin + (i / pointsCount) * (xMax - xMin));
+    }
+    
+    // Готовим все комбинации знаков
+    const allSignCombinations = [];
+    if (k === 0) {
+        allSignCombinations.push(new Map());
     } else {
-        // Численный режим – используем computeYForX для каждой точки
-        for (let i = 0; i <= pointsCount; i++) {
-            const x = xMin + (i / pointsCount) * (xMax - xMin);
-            const y = computeYForX(x, graphContext.startSpec, graphContext.endSpec);
-            points.push({ x, y });
+        for (let mask = 0; mask < totalBranches; mask++) {
+            const signs = new Map();
+            for (let i = 0; i < k; i++) {
+                signs.set(ambiguousBlocks[i], (mask & (1 << i)) ? 1 : -1);
+            }
+            allSignCombinations.push(signs);
         }
     }
-    return points;
+    
+    // Цвета для веток
+    const colors = ['#f97316', '#3b82f6', '#10b981', '#8b5cf6', '#ec489a', '#06b6d4', '#f59e0b', '#ef4444', '#a855f7', '#14b8a6'];
+    
+    // Генерируем все наборы точек
+    const datasets = [];
+    for (let idx = 0; idx < allSignCombinations.length; idx++) {
+        const signs = allSignCombinations[idx];
+        const color = colors[idx % colors.length];
+        const points = [];
+        
+        // Для каждого x вычисляем Y
+        for (const element of xValues) {
+            const x = element;
+            let y;
+            try {
+                y = computeSubgraph(startRect, startSpec.paramName, x, signs, needed, order, endRect, endSpec);
+            } catch(e) {
+                y = null;
+            }
+            points.push({ x, y: (y !== null && isFinite(y)) ? y : null });
+        }
+        datasets.push({ points, color });
+    }
+    
+    const state = {
+        xMin, xMax, yMin: -100, yMax: 100,
+        datasets: datasets
+    };
+    
+    const redraw = () => drawGraphInBlock(blockData);
+    
+    const blockData = {
+        id: blockId, element: blockDiv, canvas, wrapper, state,
+        graphContext: { xLabel: startSpec.paramName, yLabel: endSpec.paramName },
+        redraw: redraw
+    };
+    graphBlocks.set(blockId, blockData);
+    
+    const resizeObserver = new ResizeObserver(() => {
+        const w = wrapper.clientWidth, h = wrapper.clientHeight;
+        if (canvas.width !== w || canvas.height !== h) {
+            canvas.width = w;
+            canvas.height = h;
+        }
+        redraw();
+    });
+    resizeObserver.observe(wrapper);
+    blockData.observer = resizeObserver;
+    
+    setupGraphPanZoom(canvas, blockData);
+    
+    blockDiv.querySelector('.delete-card').addEventListener('click', (e) => {
+        e.stopPropagation();
+        deleteGraphBlock(blockId);
+    });
+    
+    makeGraphBlockDraggable(blockDiv);
+    setTimeout(redraw, 20);
+    return blockId;
+}
+
+function setupGraphPanZoom(canvas, blockData) {
+    let isPanning = false;
+    let panStartX, panStartY;
+    let startXMin, startXMax, startYMin, startYMax;
+    
+    canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+    
+    // Правая кнопка (код 2) для панорамирования
+    canvas.addEventListener('mousedown', (e) => {
+        if (e.button === 2) {
+            e.preventDefault();
+            isPanning = true;
+            panStartX = e.clientX;
+            panStartY = e.clientY;
+            const s = blockData.state;
+            startXMin = s.xMin;
+            startXMax = s.xMax;
+            startYMin = s.yMin;
+            startYMax = s.yMax;
+        }
+    });
+    
+    window.addEventListener('mousemove', (e) => {
+        if (!isPanning) return;
+        const dx = e.clientX - panStartX;
+        const dy = e.clientY - panStartY;
+        const rangeX = startXMax - startXMin;
+        const rangeY = startYMax - startYMin;
+        const scaleX = rangeX / canvas.clientWidth;
+        const scaleY = rangeY / canvas.clientHeight;
+        let newXMin = startXMin - dx * scaleX;
+        let newXMax = startXMax - dx * scaleX;
+        let newYMin = startYMin + dy * scaleY;
+        let newYMax = startYMax + dy * scaleY;
+        
+        // Ограничения
+        if (newXMin < -100) { newXMax += (-100 - newXMin); newXMin = -100; }
+        if (newXMax > 100) { newXMin -= (newXMax - 100); newXMax = 100; }
+        if (newYMin < -100) { newYMax += (-100 - newYMin); newYMin = -100; }
+        if (newYMax > 100) { newYMin -= (newYMax - 100); newYMax = 100; }
+        
+        blockData.state.xMin = newXMin;
+        blockData.state.xMax = newXMax;
+        blockData.state.yMin = newYMin;
+        blockData.state.yMax = newYMax;
+        blockData.redraw();   // теперь работает
+    });
+    
+    window.addEventListener('mouseup', (e) => {
+        if (e.button === 2) isPanning = false;
+    });
+    
+    canvas.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        const delta = e.deltaY > 0 ? 1 : -1;
+        const factor = delta < 0 ? 0.9 : 1.1;
+        const rect = canvas.getBoundingClientRect();
+        const mouseX = e.clientX - rect.left;
+        const mouseY = e.clientY - rect.top;
+        const padding = { left: 50, right: 30, top: 20, bottom: 40 };
+        const graphWidth = canvas.width - padding.left - padding.right;
+        const graphHeight = canvas.height - padding.top - padding.bottom;
+        const state = blockData.state;
+        const centerX = state.xMin + ((mouseX - padding.left) / graphWidth) * (state.xMax - state.xMin);
+        const centerY = state.yMin + ((graphHeight - (mouseY - padding.top)) / graphHeight) * (state.yMax - state.yMin);
+        let newXRange = (state.xMax - state.xMin) * factor;
+        let newYRange = (state.yMax - state.yMin) * factor;
+        const ratioX = (centerX - state.xMin) / (state.xMax - state.xMin);
+        const ratioY = (centerY - state.yMin) / (state.yMax - state.yMin);
+        state.xMin = Math.max(-100, Math.min(-1, centerX - newXRange * ratioX));
+        state.xMax = Math.min( 100, Math.max( 1, centerX + newXRange * (1 - ratioX)));
+        state.yMin = Math.max(-100, Math.min(-1, centerY - newYRange * ratioY));
+        state.yMax = Math.min( 100, Math.max( 1, centerY + newYRange * (1 - ratioY)));
+        blockData.redraw();
+    });
 }
 
 /**
@@ -2670,6 +2436,86 @@ function computeOutCode(x, y, rect) {
     if (y < rect.y) code |= 4;      // top
     if (y > rect.y + rect.h) code |= 8; // bottom
     return code;
+}
+
+// Быстрое вычисление подграфа для заданного x и комбинации знаков
+function computeSubgraph(startRect, startParam, x, signsMap, needed, order, endRect, endSpec) {
+    // Устанавливаем значение X (временно, без перерисовки)
+    const originalXManual = startRect.manualValues[startParam];
+    const originalXConn = paramConnections.find(c => c.targetRectId === startRect.id && c.targetParam === startParam);
+    let originalXConnIdx = -1;
+    if (originalXConn) {
+        originalXConnIdx = paramConnections.indexOf(originalXConn);
+        paramConnections.splice(originalXConnIdx, 1);
+    }
+    startRect.manualValues[startParam] = String(x);
+    
+    // Устанавливаем временные знаки для неоднозначных блоков
+    for (let [rect, sign] of signsMap.entries()) {
+        rect.tempSign = sign;
+    }
+    
+    // Сбрасываем computed значения у нужных блоков
+    for (let id of needed) {
+        rectangles.get(id).computedValue = null;
+    }
+    
+    // Вычисляем в топологическом порядке
+    for (let id of order) {
+        const rect = rectangles.get(id);
+        const inputs = {};
+        let ok = true;
+        for (let v of rect.vars) {
+            if (v === rect.targetVar) continue;
+            const conn = paramConnections.find(c => c.targetRectId === id && c.targetParam === v);
+            if (conn) {
+                const src = rectangles.get(conn.sourceRectId);
+                if (src && src.computedValue !== null) inputs[v] = src.computedValue;
+                else { ok = false; break; }
+            } else {
+                const man = rect.manualValues[v];
+                if (man !== undefined && man.trim() !== '' && !isNaN(parseFloat(man))) inputs[v] = parseFloat(man);
+                else { ok = false; break; }
+            }
+        }
+        if (!ok) continue;
+        if (rect.tempSign !== undefined) inputs.rootSign = rect.tempSign;
+        else if (rect.rootSign !== undefined) inputs.rootSign = rect.rootSign;
+        
+        if (rect.solverFunc) {
+            const res = rect.solverFunc(inputs);
+            if (res !== null && isFinite(res)) rect.computedValue = res;
+        }
+    }
+    
+    // Получаем Y
+    let y = null;
+    if (endSpec.isOutput) {
+        y = endRect.computedValue;
+    } else {
+        const conn = paramConnections.find(c => c.targetRectId === endSpec.rectId && c.targetParam === endSpec.paramName);
+        if (conn) {
+            const src = rectangles.get(conn.sourceRectId);
+            y = src ? src.computedValue : null;
+        } else {
+            const man = endRect.manualValues[endSpec.paramName];
+            if (man !== undefined && man.trim() !== '' && !isNaN(parseFloat(man))) y = parseFloat(man);
+        }
+    }
+    
+    // Восстанавливаем исходное состояние (кроме computed – они нам не нужны дальше)
+    if (originalXConn) {
+        paramConnections.splice(originalXConnIdx, 0, originalXConn);
+    } else {
+        delete startRect.manualValues[startParam];
+    }
+    if (originalXManual !== undefined) startRect.manualValues[startParam] = originalXManual;
+    
+    for (let rect of signsMap.keys()) {
+        delete rect.tempSign;
+    }
+    
+    return y;
 }
 
 /**
@@ -2729,32 +2575,30 @@ function clipSegment(x1, y1, x2, y2, rect) {
  * @param {Object} blockData - объект блока из graphBlocks
  */
 function drawGraphInBlock(blockData) {
-    const { canvas, graphContext, state } = blockData;
-    const { xMin, xMax, yMin, yMax, points } = state;
+    const { canvas, state, graphContext } = blockData;
+    const { xMin, xMax, yMin, yMax, datasets } = state;
     const ctx = canvas.getContext('2d');
     const width = canvas.width;
     const height = canvas.height;
-
+    
     const padding = { left: 50, right: 30, top: 20, bottom: 40 };
     const graphWidth = width - padding.left - padding.right;
     const graphHeight = height - padding.top - padding.bottom;
-
-    // Прямоугольник области отрисовки графика (в координатах canvas)
     const clipRect = { x: padding.left, y: padding.top, w: graphWidth, h: graphHeight };
-
+    
     const xToPixel = (x) => padding.left + ((x - xMin) / (xMax - xMin)) * graphWidth;
     const yToPixel = (y) => padding.top + graphHeight - ((y - yMin) / (yMax - yMin)) * graphHeight;
-
+    
     ctx.clearRect(0, 0, width, height);
     ctx.save();
-
-    // ---- Отрисовка сетки и осей (без изменений) ----
+    
+    // ---- Отрисовка сетки и осей (как было) ----
     ctx.font = '10px monospace';
     ctx.fillStyle = '#555';
     ctx.strokeStyle = '#ddd';
     ctx.lineWidth = 1;
-
-    const niceStep = (range, targetSteps = 10) => {
+    
+    function niceStep(range, targetSteps = 10) {
         const step = range / targetSteps;
         const magnitude = 10 ** Math.floor(Math.log10(step));
         const residual = step / magnitude;
@@ -2764,11 +2608,11 @@ function drawGraphInBlock(blockData) {
         else if (residual < 7.5) nice = 5 * magnitude;
         else nice = 10 * magnitude;
         return nice;
-    };
-
+    }
+    
     const xStep = niceStep(xMax - xMin, 8);
     const yStep = niceStep(yMax - yMin, 6);
-
+    
     let firstX = Math.ceil(xMin / xStep) * xStep;
     for (let x = firstX; x <= xMax; x += xStep) {
         const px = xToPixel(x);
@@ -2779,7 +2623,7 @@ function drawGraphInBlock(blockData) {
         ctx.stroke();
         ctx.fillText(x.toFixed(2), px - 10, padding.top + graphHeight + 15);
     }
-
+    
     let firstY = Math.ceil(yMin / yStep) * yStep;
     for (let y = firstY; y <= yMax; y += yStep) {
         const py = yToPixel(y);
@@ -2790,7 +2634,7 @@ function drawGraphInBlock(blockData) {
         ctx.stroke();
         ctx.fillText(y.toFixed(2), padding.left - 30, py + 3);
     }
-
+    
     ctx.beginPath();
     ctx.strokeStyle = '#333';
     ctx.lineWidth = 2;
@@ -2820,267 +2664,67 @@ function drawGraphInBlock(blockData) {
     ctx.fillStyle = '#2c3e50';
     ctx.fillText(graphContext.xLabel, padding.left + graphWidth + 5, yToPixel(0) + 4);
     ctx.fillText(graphContext.yLabel, xToPixel(0) - 6, padding.top - 5);
-
-    // ---- Отрисовка кривой с отсечением по clipRect ----
-    ctx.beginPath();
-    ctx.strokeStyle = '#f97316';
-    ctx.lineWidth = 2;
-
-    // Проходим по точкам, соединяя соседние валидные точки
-    for (let i = 0; i < points.length - 1; i++) {
-        const p1 = points[i];
-        const p2 = points[i+1];
-        if (p1.y === null || p2.y === null) continue;
-
-        const px1 = xToPixel(p1.x);
-        const py1 = yToPixel(p1.y);
-        const px2 = xToPixel(p2.x);
-        const py2 = yToPixel(p2.y);
-
-        const clipped = clipSegment(px1, py1, px2, py2, clipRect);
-        if (clipped) {
-            ctx.beginPath();
-            ctx.moveTo(clipped.x1, clipped.y1);
-            ctx.lineTo(clipped.x2, clipped.y2);
+    
+    // ---- Отрисовка кривых (оптимизированная) ----
+    for (let ds of datasets) {
+        const { points, color } = ds;
+        ctx.beginPath();
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 2;
+        
+        let isDrawing = false;
+        let lastX = 0, lastY = 0;
+        
+        for (let i = 0; i < points.length; i++) {
+            const p = points[i];
+            if (p.y === null || !isFinite(p.y)) {
+                if (isDrawing) {
+                    ctx.stroke();
+                    ctx.beginPath();
+                    isDrawing = false;
+                }
+                continue;
+            }
+            const px = xToPixel(p.x);
+            const py = yToPixel(p.y);
+            
+            if (!isDrawing) {
+                ctx.moveTo(px, py);
+                lastX = px;
+                lastY = py;
+                isDrawing = true;
+                continue;
+            }
+            
+            // Отсечение отрезка (lastX,lastY) -> (px,py)
+            const clipped = clipSegment(lastX, lastY, px, py, clipRect);
+            if (clipped) {
+                // Если предыдущая точка была вне области, начинаем новый путь
+                if (!isDrawing) {
+                    ctx.beginPath();
+                    ctx.moveTo(clipped.x1, clipped.y1);
+                    isDrawing = true;
+                } else {
+                    ctx.moveTo(clipped.x1, clipped.y1);
+                }
+                ctx.lineTo(clipped.x2, clipped.y2);
+            } else {
+                // Сегмент полностью вне экрана – прерываем линию
+                if (isDrawing) {
+                    ctx.stroke();
+                    ctx.beginPath();
+                    isDrawing = false;
+                }
+            }
+            lastX = px;
+            lastY = py;
+        }
+        if (isDrawing) {
             ctx.stroke();
         }
     }
-
+    
     ctx.restore();
-}
-
-/**
- * Проверяет, можно ли строку интерпретировать как число (константу).
- */
-function isNumeric(str) {
-    if (typeof str === 'number') return true;
-    if (typeof str !== 'string') return false;
-    return !isNaN(parseFloat(str)) && isFinite(str);
-}
-
-/**
- * Упрощает строку математического выражения (базовые замены).
- * Удаляет лишние скобки вокруг одиночного токена, заменяет 1*var, 0+var и т.д.
- */
-function simplifyExpression(expr) {
-    expr = expr.trim();
-    // Убираем скобки, если внутри просто число или переменная
-    if (expr.startsWith('(') && expr.endsWith(')')) {
-        const inner = expr.slice(1, -1);
-        if (!inner.includes('+') && !inner.includes('-') && !inner.includes('*') && !inner.includes('/') && !inner.includes('Math.')) {
-            expr = inner;
-        }
-    }
-    // Замены вида 1*x -> x, 0+x -> x, x+0 -> x, x*1 -> x
-    expr = expr.replace(/(?:^|\*|\+|\-|\/|\()1\*(\w+)/g, '$1');
-    expr = expr.replace(/(\w+)\*1(?:\)|$|\+|\-)/g, '$1');
-    expr = expr.replace(/(?:^|\+|\-|\(|\*)0\+(\w+)/g, '$1');
-    expr = expr.replace(/(\w+)\+0(?:\)|$|\+|\-)/g, '$1');
-    expr = expr.replace(/(\w+)\-0/g, '$1');
-    expr = expr.replace(/0\+(\w+)/g, '$1');
-    // Обработка Math.pow(x,2) -> x*x (для читаемости, но не обязательно)
-    expr = expr.replace(/Math\.pow\((\w+),\s*2\)/g, '($1*$1)');
-    return expr;
-}
-
-function escapeRegExp(string) {
-    return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
-
-/**
- * Возвращает выражение для выходного параметра блока.
- * Для обычного блока: out = правая часть формулы, где вместо переменных подставлены их выражения.
- * Для арифметического блока: out = in op coeff.
- */
-function getOutputExpression(rect, sourceRect, sourceParam, visited) {
-    if (rect.isCustom) {
-        const inExpr = getInputExpression(rect, 'in', sourceRect, sourceParam, visited);
-        const coeffVal = rect.manualValues.coeff;
-        if (coeffVal === undefined || coeffVal === '') return null;
-        const coeffExpr = isNumeric(coeffVal) ? coeffVal : `(${coeffVal})`;
-        let op = rect.operation;
-        if (op === '+') return `(${inExpr} + ${coeffExpr})`;
-        if (op === '-') return `(${inExpr} - ${coeffExpr})`;
-        if (op === '*') return `(${inExpr} * ${coeffExpr})`;
-        if (op === '/') return `(${inExpr} / ${coeffExpr})`;
-        return null;
-    } else {
-        // Стандартная формула: left = right
-        let [left, right] = rect.formulaEq.split('=').map(s => s.trim());
-        if (!right) return null;
-        // Целевая переменная – rect.targetVar (левая часть может быть другой, но мы берём targetVar)
-        // Поэтому нам нужно выражение именно для rect.targetVar. В формуле оно уже стоит слева.
-        // Если rect.targetVar не совпадает с левой частью, нужно переставить уравнение.
-        let exprForTarget;
-        if (left === rect.targetVar) {
-            exprForTarget = right;
-        } else if (right.includes(rect.targetVar)) {
-            // Целевая переменная находится справа – нужно решить уравнение относительно неё.
-            // В текущей реализации мы всегда решаем уравнение относительно targetVar через solveEquation.
-            // Для аналитического вывода это сложно. Поэтому если targetVar не слева, используем старый метод.
-            return null;
-        } else {
-            return null;
-        }
-        // Нормализуем выражение (замена ^2 и пр.)
-        let normalized = normalizeExpression(exprForTarget);
-        // Находим все переменные, входящие в normalized (кроме уже известных)
-        const varsInExpr = rect.vars.filter(v => v !== rect.targetVar);
-        // Подставляем вместо каждой переменной её выражение (через источник x)
-        let substituted = normalized;
-        for (let v of varsInExpr) {
-            const vExpr = getInputExpression(rect, v, sourceRect, sourceParam, visited);
-            if (vExpr === null) return null;
-            // Заменяем все вхождения переменной v на её выражение
-            
-            const regex = new RegExp(
-                `(?<![\\p{L}\\p{N}_])${escapeRegExp(v)}(?![\\p{L}\\p{N}_])`, 'gu' // флаг 'u' включает Unicode-режим
-            );
-            substituted = substituted.replace(regex, `(${vExpr})`);
-        }
-        return simplifyExpression(substituted);
-    }
-}
-
-/**
- * Возвращает выражение для входного параметра paramName блока rect.
- * Если параметр связан с выходом другого блока – рекурсивно получаем выражение того выхода.
- * Если параметр имеет ручное числовое значение – возвращает его как строку.
- * Иначе возвращает null.
- */
-function getInputExpression(rect, paramName, sourceRect, sourceParam, visited) {
-    // Проверка на цикл
-    const key = `${rect.id}:${paramName}`;
-    if (visited.has(key)) return null;
-    visited.add(key);
-
-    // Нет связи – берём ручное значение
-    const manual = rect.manualValues[paramName];
-    // Особый случай: если этот параметр и есть искомая независимая переменная (x)
-    if (rect.id === sourceRect?.id && paramName === sourceParam) {
-        visited.delete(key);
-        return 'x';
-    }
-    if (manual !== undefined && manual !== '' && !isNaN(parseFloat(manual))) {
-        visited.delete(key);
-        return manual;
-    }
-    visited.delete(key);
-    return null;
-}
-
-/**
- * Главная функция вывода аналитического выражения y = f(x).
- * @param {Object} startSpec - { rectId, paramName, isOutput: false } (всегда false, т.к. x – входной)
- * @param {Object} endSpec   - { rectId, paramName, isOutput } – может быть выходной или входной
- * @returns {string|null} Строка выражения, зависящая от 'x', или null, если вывести не удалось.
- */
-function deriveExpression(startSpec, endSpec) {
-    const sourceRect = rectangles.get(startSpec.rectId);
-    const targetRect = rectangles.get(endSpec.rectId);
-    if (!sourceRect || !targetRect) return null;
-
-    const visited = new Set();
-    let finalExpr = null;
-
-    if (endSpec.isOutput) {
-        // Конечный параметр – выходной (целевая переменная блока)
-        finalExpr = getOutputExpression(targetRect, sourceRect, startSpec.paramName, visited);
-    } else {
-        // Конечный параметр – входной
-        finalExpr = getInputExpression(targetRect, endSpec.paramName, sourceRect, startSpec.paramName, visited);
-    }
-
-    if (finalExpr && typeof finalExpr === 'string') {
-        // Заменяем все вхождения независимой переменной 'x' (она может называться иначе, но мы её обозначаем 'x')
-        // ВАЖНО: внутри выражений переменная 'x' может быть переименована. Упростим: оставим как есть.
-        // Для безопасности убедимся, что в выражении нет неопределённых переменных (кроме 'x')
-        const possibleVars = finalExpr.match(/[a-zA-Z_][a-zA-Z0-9_]*/g) || [];
-        for (let v of possibleVars) {
-            if (v !== 'x' && !isNumeric(v) && !v.startsWith('Math.') && !['PI','E','sin','cos','tan','sqrt','log','abs'].includes(v)) {
-                console.warn(`Неопределённая переменная в выражении: ${v}`);
-                return null; // неизвестная переменная – не можем вычислить
-            }
-        }
-        return simplifyExpression(finalExpr);
-    }
-    return null;
-}
-
-/**
- * Вычисляет значение параметра endSpec для заданного x, временно подставляя x во входной параметр startSpec.
- * Используется только в численном режиме (когда нет аналитического выражения).
- * @param {number} x - значение независимой переменной
- * @param {Object} startSpec - спецификация начального параметра (X)
- * @param {Object} endSpec - спецификация конечного параметра (Y)
- * @returns {number|null} вычисленное значение Y или null
- */
-function computeYForX(x, startSpec, endSpec) {
-    const startRect = rectangles.get(startSpec.rectId);
-    const endRect = rectangles.get(endSpec.rectId);
-    if (!startRect || !endRect) return null;
-
-    // Сохраняем исходное состояние
-    let originalManualValue = startRect.manualValues[startSpec.paramName];
-    let originalConnection = paramConnections.find(c => c.targetRectId === startSpec.rectId && c.targetParam === startSpec.paramName);
-    let originalConnectionIndex = originalConnection ? paramConnections.indexOf(originalConnection) : -1;
-
-    // Отключаем перерисовку для скорости
-    const originalRedraw = redrawParamLines;
-    const originalUpdateList = updateParamConnectionsList;
-    window.redrawParamLines = () => {};
-    window.updateParamConnectionsList = () => {};
-
-    try {
-        // Убираем связь, если была
-        if (originalConnection) {
-            paramConnections.splice(originalConnectionIndex, 1);
-        }
-        // Устанавливаем ручное значение X
-        startRect.manualValues[startSpec.paramName] = String(x);
-        rebuildParamsList(startRect);
-        computeAll();
-
-        let y = null;
-        if (endSpec.isOutput) {
-            if (endRect.computedValue !== null && isFinite(endRect.computedValue)) {
-                y = endRect.computedValue;
-            }
-        } else {
-            const endConn = paramConnections.find(c => c.targetRectId === endSpec.rectId && c.targetParam === endSpec.paramName);
-            if (endConn) {
-                const srcRect = rectangles.get(endConn.sourceRectId);
-                if (srcRect && srcRect.computedValue !== null && isFinite(srcRect.computedValue)) {
-                    y = srcRect.computedValue;
-                }
-            } else {
-                const manualVal = endRect.manualValues[endSpec.paramName];
-                if (manualVal !== undefined && manualVal !== '' && !isNaN(parseFloat(manualVal))) {
-                    y = parseFloat(manualVal);
-                }
-            }
-        }
-        return (y !== null && isFinite(y)) ? y : null;
-    } finally {
-        // Восстанавливаем исходное состояние
-        if (originalConnection) {
-            if (!paramConnections.includes(originalConnection)) {
-                paramConnections.push(originalConnection);
-            }
-        } else {
-            if (originalManualValue === undefined) {
-                delete startRect.manualValues[startSpec.paramName];
-            } else {
-                startRect.manualValues[startSpec.paramName] = originalManualValue;
-            }
-        }
-        rebuildParamsList(startRect);
-        computeAll();
-        window.redrawParamLines = originalRedraw;
-        window.updateParamConnectionsList = originalUpdateList;
-        redrawParamLines();
-        updateParamConnectionsList();
-    }
 }
 
 saveBtn.addEventListener('click', () => saveToFile());
