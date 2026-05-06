@@ -404,6 +404,9 @@ input.param-input:focus {
 
 .root-sign-control {
     display: flex;
+    flex-direction: column; /* Элементы встанут друг под другом */
+    justify-content: center; /* Центрирует по вертикали (главная ось) */
+    align-items: center;    /* Центрирует по горизонтали (поперечная ось) */
     gap: 5px;
     margin-top: 5px;
     justify-content: center;

@@ -1429,8 +1429,8 @@ function createFormulaBlock(formulaEq, formulaName, varsArray, left, top, id = n
     const isQuadratic = formulaEq.includes('^2') || formulaEq.includes('**2');
     const extraControls = isQuadratic ? `
         <div class="root-sign-control">
-            <span class="root-sign-btn" data-sign="1">+ ветка</span>
-            <span class="root-sign-btn" data-sign="-1">- ветка</span>
+            <a class="root-sign-btn" data-sign="1">+ ветка</a>
+            <a class="root-sign-btn" data-sign="-1">- ветка</a>
         </div>
     ` : '';
     
@@ -1447,8 +1447,8 @@ function createFormulaBlock(formulaEq, formulaName, varsArray, left, top, id = n
                 <div class="target-symbol">${targetVar}</div>
                 <div class="target-value">?</div>
             </div>
-            <div class="target-port"></div>
             ${extraControls}
+            <div class="target-port"></div>
         </div>
     `;
     
