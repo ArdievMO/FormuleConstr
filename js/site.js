@@ -2371,7 +2371,7 @@ async function buildGraph(startSpec, endSpec) {
     
     const canvas = blockDiv.querySelector('canvas');
     const wrapper = blockDiv.querySelector('.graph-canvas-wrapper');
-    const pointsCount = 2000;
+    const pointsCount = 20000;
     const xMin = -100, xMax = 100;
     const xValues = Array.from({ length: pointsCount + 1 }, (_, i) => xMin + (i / pointsCount) * (xMax - xMin));
     
@@ -2393,6 +2393,9 @@ async function buildGraph(startSpec, endSpec) {
             let y;
             try {
                 y = computeSubgraph(startRect, startSpec.paramName, x, signs, needed, order, endRect, endSpec, null);
+                if (Math.abs(y) > 1e6)
+                    y = null; // разрыв при слишком больших значениях
+                points.push({ x, y: (y !== null && isFinite(y)) ? y : null });
             } catch(e) { y = null; }
             points.push({ x, y: (y !== null && isFinite(y)) ? y : null });
         }
@@ -2499,6 +2502,9 @@ async function buildInverseGraph(startSpec, endSpec, targetMap) {
             let y;
             try {
                 y = computeSubgraph(startRect, startSpec.paramName, x, signs, needed, order, endRect, endSpec, targetMap);
+                if (Math.abs(y) > 1e6)
+                    y = null; // разрыв при слишком больших значениях
+                points.push({ x, y: (y !== null && isFinite(y)) ? y : null });
             } catch(e) { y = null; }
             points.push({ x, y: (y !== null && isFinite(y)) ? y : null });
         }
@@ -2744,7 +2750,9 @@ function computeSubgraph(startRect, startParam, x, signsMap, needed, order, endR
             saved.rect.solverFunc = saved.oldSolver;
         }
     }
-    
+
+    if (Math.abs(y) > 1e6)
+        y = null;
     return y;
 }
 
@@ -2754,10 +2762,23 @@ function computeSubgraph(startRect, startParam, x, signsMap, needed, order, endR
  * иначе null.
  */
 function clipSegment(x1, y1, x2, y2, rect) {
+    // Если оба конца внутри – возвращаем как есть
+    const inside1 = (x1 >= rect.x && x1 <= rect.x + rect.w && y1 >= rect.y && y1 <= rect.y + rect.h);
+    const inside2 = (x2 >= rect.x && x2 <= rect.x + rect.w && y2 >= rect.y && y2 <= rect.y + rect.h);
+    if (inside1 && inside2) {
+        return { x1, y1, x2, y2 };
+    }
+    
+    // Если оба конца очень далеко (больше чем в 10 раз размера экрана) – не рисуем
+    const farLimit = Math.max(rect.w, rect.h) * 10;
+    if (Math.abs(x1) > farLimit && Math.abs(x2) > farLimit) return null;
+    if (Math.abs(y1) > farLimit && Math.abs(y2) > farLimit) return null;
+    
+    // Стандартное отсечение Коэна-Сазерленда
     let out1 = computeOutCode(x1, y1, rect);
     let out2 = computeOutCode(x2, y2, rect);
     let accept = false;
-
+    
     while (true) {
         if ((out1 | out2) === 0) {
             accept = true;
@@ -2766,11 +2787,8 @@ function clipSegment(x1, y1, x2, y2, rect) {
         if (out1 & out2) {
             break;
         }
-        // Выбираем точку, которая находится снаружи
         const out = out1 !== 0 ? out1 : out2;
         let x, y;
-
-        // Пересечение с границей
         if (out & 1) { // left
             x = rect.x;
             y = y1 + (y2 - y1) * (rect.x - x1) / (x2 - x1);
@@ -2784,7 +2802,9 @@ function clipSegment(x1, y1, x2, y2, rect) {
             y = rect.y + rect.h;
             x = x1 + (x2 - x1) * (rect.y + rect.h - y1) / (y2 - y1);
         }
-
+        // Проверка на NaN (если отрезок почти вертикальный/горизонтальный и деление на ноль)
+        if (isNaN(x) || isNaN(y)) break;
+        
         if (out === out1) {
             x1 = x; y1 = y;
             out1 = computeOutCode(x1, y1, rect);
@@ -2793,8 +2813,9 @@ function clipSegment(x1, y1, x2, y2, rect) {
             out2 = computeOutCode(x2, y2, rect);
         }
     }
-
+    
     if (accept) {
+        // Дополнительная проверка, что точки внутри или на границе
         return { x1, y1, x2, y2 };
     }
     return null;
@@ -2905,8 +2926,8 @@ function drawGraphInBlock(blockData) {
         let isDrawing = false;
         let lastX = 0, lastY = 0;
         
-        for (let i = 0; i < points.length; i++) {
-            const p = points[i];
+        for (const element of points) {
+            const p = element;
             if (p.y === null || !isFinite(p.y)) {
                 if (isDrawing) {
                     ctx.stroke();
@@ -2929,13 +2950,13 @@ function drawGraphInBlock(blockData) {
             // Отсечение отрезка (lastX,lastY) -> (px,py)
             const clipped = clipSegment(lastX, lastY, px, py, clipRect);
             if (clipped) {
-                // Если предыдущая точка была вне области, начинаем новый путь
-                if (!isDrawing) {
+                
+                if (isDrawing) {
+                    ctx.moveTo(clipped.x1, clipped.y1);
+                } else { // Если предыдущая точка была вне области, начинаем новый путь
                     ctx.beginPath();
                     ctx.moveTo(clipped.x1, clipped.y1);
                     isDrawing = true;
-                } else {
-                    ctx.moveTo(clipped.x1, clipped.y1);
                 }
                 ctx.lineTo(clipped.x2, clipped.y2);
             } else {
