@@ -402,6 +402,26 @@ input.param-input:focus {
     margin-left: 4px;
 }
 
+.root-sign-control {
+    display: flex;
+    gap: 5px;
+    margin-top: 5px;
+    justify-content: center;
+}
+.root-sign-btn {
+    cursor: pointer;
+    background: #e2e8f0;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: bold;
+    transition: 0.2s;
+}
+.root-sign-btn.active {
+    background: #f97316;
+    color: white;
+}
+
 .target-area {
     display: flex;
     align-items: center;
