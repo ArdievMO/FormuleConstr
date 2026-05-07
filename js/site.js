@@ -990,25 +990,23 @@ function getRelativeCoords(e, container) {
  */
 function redrawParamLines() {
     svg.innerHTML = '';
-    const graphInner = document.querySelector('.graph-inner');
-    if (!graphInner) return;
-    const w = graphInner.clientWidth;
-    const h = graphInner.clientHeight;
-    svg.setAttribute('width', w);
-    svg.setAttribute('height', h);
+    const containerRect = graphArea.getBoundingClientRect();
+    if (!containerRect.width || !containerRect.height) return;
+    svg.setAttribute('width', containerRect.width);
+    svg.setAttribute('height', containerRect.height);
     
     for (let conn of paramConnections) {
         const sourceRect = rectangles.get(conn.sourceRectId);
         const targetRect = rectangles.get(conn.targetRectId);
         if (!sourceRect || !targetRect) continue;
-        const sourcePos = getPortPosition(sourceRect, conn.sourceParam, true);
-        const targetPos = getPortPosition(targetRect, conn.targetParam, false);
-        if (!sourcePos || !targetPos) continue;
+        let sourcePortPos = getPortPosition(sourceRect, conn.sourceParam, true);
+        let targetPortPos = getPortPosition(targetRect, conn.targetParam, false);
+        if (!sourcePortPos || !targetPortPos) continue;
         const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
-        line.setAttribute("x1", sourcePos.x);
-        line.setAttribute("y1", sourcePos.y);
-        line.setAttribute("x2", targetPos.x);
-        line.setAttribute("y2", targetPos.y);
+        line.setAttribute("x1", sourcePortPos.x);
+        line.setAttribute("y1", sourcePortPos.y);
+        line.setAttribute("x2", targetPortPos.x);
+        line.setAttribute("y2", targetPortPos.y);
         line.setAttribute("stroke", "#f97316");
         line.setAttribute("stroke-width", "3");
         line.setAttribute("stroke-dasharray", "6 3");
@@ -1045,7 +1043,6 @@ function getPortPosition(rect, paramName, isOutput) {
     const rectEl = rect.element;
     if (!rectEl) return null;
     
-    // Находим элемент порта
     let targetEl = null;
     if (isOutput) {
         targetEl = rectEl.querySelector('.target-port');
@@ -1061,15 +1058,12 @@ function getPortPosition(rect, paramName, isOutput) {
     }
     if (!targetEl) return null;
     
-    // Получаем координаты порта относительно страницы
     const portRect = targetEl.getBoundingClientRect();
-    const graphInnerRect = document.querySelector('.graph-inner').getBoundingClientRect();
-    
-    // Пересчитываем в координаты внутри .graph-inner (без учёта трансформации)
-    const x = portRect.left - graphInnerRect.left;
-    const y = portRect.top - graphInnerRect.top;
-    
-    return { x, y };
+    const graphAreaRect = graphArea.getBoundingClientRect();
+    return {
+        x: portRect.left - graphAreaRect.left,
+        y: portRect.top - graphAreaRect.top
+    };
 }
 
 /**
@@ -1495,7 +1489,7 @@ function createFormulaBlock(formulaEq, formulaName, varsArray, isSwappable, left
         connections: {},
         computedValue: null,
         rootSign: 1,
-        solverFunc: getSolverFunction(formulaEq, targetVar, false, null)
+        solverFunc: getSolverFunction(formulaEq, targetVar)
     };
     rectangles.set(rectId, rectData);
     
@@ -1535,7 +1529,7 @@ function createFormulaBlock(formulaEq, formulaName, varsArray, isSwappable, left
             const idx = rectData.vars.indexOf(rectData.targetVar);
             const nextIdx = (idx + 1) % rectData.vars.length;
             const newTarget = rectData.vars[nextIdx];
-            const newSolver = getSolverFunction(rectData.formulaEq, newTarget, false, null);
+            const newSolver = getSolverFunction(rectData.formulaEq, newTarget);
             if (newSolver === null || newSolver.toString().includes('заглушка')) {
                 alert(`Функция для переменной ${newTarget} в формуле ${rectData.formulaEq} ещё не реализована.`);
                 return;
@@ -1585,6 +1579,7 @@ function createFormulaBlock(formulaEq, formulaName, varsArray, isSwappable, left
     }
     
     makeDraggable(rectDiv, rectId);
+    expandGraphInner();
     return rectId;
 }
 
@@ -1648,6 +1643,8 @@ function deleteRectangle(rectId) {
     });
     rect.element.remove();
     rectangles.delete(rectId);
+    
+    expandGraphInner();
 
     for (let r of rectangles.values()){
         rebuildParamsList(r);
@@ -1682,8 +1679,6 @@ function deleteGraphBlock(blockId) {
 function makeDraggable(element, rectId) {
     let dragging = false, startX, startY, startLeft, startTop;
     element.addEventListener('mousedown', (e) => {
-        // Если клик на инпуте, порте, кнопке удаления или целевом порте – не начинаем перетаскивание,
-        // чтобы инпут мог получить фокус.
         if (e.target.closest('.param-input') ||
             e.target.closest('.port') ||
             e.target.closest('.delete-card') ||
@@ -1701,16 +1696,30 @@ function makeDraggable(element, rectId) {
     });
     function onMouseMove(e) {
         if (!dragging) return;
-        let newLeft = startLeft + (e.clientX - startX) / transformScale;
-        let newTop = startTop + (e.clientY - startY) / transformScale;
-        const parentRect = graphArea.getBoundingClientRect();
-        newLeft = Math.max(0, Math.min(newLeft, parentRect.width - element.offsetWidth));
-        newTop = Math.max(0, Math.min(newTop, parentRect.height - element.offsetHeight));
+        let dx = (e.clientX - startX) / transformScale;
+        let dy = (e.clientY - startY) / transformScale;
+        let newLeft = startLeft + dx;
+        let newTop = startTop + dy;
+        // Блок не может выйти за левую и верхнюю границы холста
+        newLeft = Math.max(0, newLeft);
+        newTop = Math.max(0, newTop);
         element.style.left = `${newLeft}px`;
         element.style.top = `${newTop}px`;
-        redrawParamLines();
+        const rectData = rectangles.get(rectId);
+        if (rectData) {
+            rectData.left = newLeft;
+            rectData.top = newTop;
+        }
+        redrawParamLines(); // перерисовываем линии сразу, чтобы они двигались синхронно
+        // expandGraphInner вызовем при отпускании мыши
     }
-    function onMouseUp() { dragging = false; document.removeEventListener('mousemove', onMouseMove); document.removeEventListener('mouseup', onMouseUp); }
+    function onMouseUp() {
+        dragging = false;
+        expandGraphInner(); // расширяем холст, если блок ушёл за пределы
+        redrawParamLines();
+        document.removeEventListener('mousemove', onMouseMove);
+        document.removeEventListener('mouseup', onMouseUp);
+    }
 }
 
 /**
@@ -1720,11 +1729,7 @@ function makeDraggable(element, rectId) {
 function makeGraphBlockDraggable(element) {
     let dragging = false, startX, startY, startLeft, startTop;
     element.addEventListener('mousedown', (e) => {
-        // Не начинаем перетаскивание при клике на canvas, кнопках удаления и т.п.
-        if (e.target.closest('canvas') ||
-            e.target.closest('.delete-card')) {
-            return;
-        }
+        if (e.target.closest('canvas') || e.target.closest('.delete-card')) return;
         e.preventDefault();
         dragging = true;
         startX = e.clientX;
@@ -1734,20 +1739,22 @@ function makeGraphBlockDraggable(element) {
         document.addEventListener('mousemove', onMouseMove);
         document.addEventListener('mouseup', onMouseUp);
     });
-
     function onMouseMove(e) {
         if (!dragging) return;
-        let newLeft = startLeft + (e.clientX - startX) / transformScale;
-        let newTop = startTop + (e.clientY - startY) / transformScale;
-        const parentRect = graphArea.getBoundingClientRect();
-        newLeft = Math.max(0, Math.min(newLeft, parentRect.width - element.offsetWidth));
-        newTop = Math.max(0, Math.min(newTop, parentRect.height - element.offsetHeight));
+        let dx = (e.clientX - startX) / transformScale;
+        let dy = (e.clientY - startY) / transformScale;
+        let newLeft = startLeft + dx;
+        let newTop = startTop + dy;
+        newLeft = Math.max(0, newLeft);
+        newTop = Math.max(0, newTop);
         element.style.left = `${newLeft}px`;
         element.style.top = `${newTop}px`;
+        redrawParamLines();
     }
-
     function onMouseUp() {
         dragging = false;
+        expandGraphInner();
+        redrawParamLines();
         document.removeEventListener('mousemove', onMouseMove);
         document.removeEventListener('mouseup', onMouseUp);
     }
@@ -1928,6 +1935,7 @@ async function deserializeState(state) {
     updateParamConnectionsList();
     redrawParamLines();
     computeAll();
+    expandGraphInner();
     
     // Небольшая задержка для полного обновления DOM перед созданием графиков
     await new Promise(resolve => setTimeout(resolve, 50));
@@ -2475,6 +2483,7 @@ async function buildGraph(startSpec, endSpec, leftX = 100, topY = 100) {
         redraw: redraw
     };
     graphBlocks.set(blockId, blockData);
+    expandGraphInner();
     
     const resizeObserver = new ResizeObserver(() => {
         const w = wrapper.clientWidth, h = wrapper.clientHeight;
@@ -2589,7 +2598,8 @@ async function buildInverseGraph(startSpec, endSpec, targetMap, leftX = 100, top
         redraw: redraw
     };
     graphBlocks.set(blockId, blockData);
-    
+    expandGraphInner();
+
     const resizeObserver = new ResizeObserver(() => {
         const w = wrapper.clientWidth, h = wrapper.clientHeight;
         if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; }
@@ -3077,7 +3087,37 @@ function drawGraphInBlock(blockData) {
     ctx.restore();
 }
 
+function clampGraphTransform() {
+    const inner = document.querySelector('.graph-inner');
+    if (!inner) return;
+    const areaW = graphArea.clientWidth;
+    const areaH = graphArea.clientHeight;
+    const innerW = inner.clientWidth;
+    const innerH = inner.clientHeight;
+    
+    // Минимальный масштаб, чтобы холст полностью покрывал окно
+    const minScaleX = areaW / innerW;
+    const minScaleY = areaH / innerH;
+    const minScale = Math.max(minScaleX, minScaleY);
+    if (transformScale < minScale) transformScale = minScale;
+    
+    const scaledW = innerW * transformScale;
+    const scaledH = innerH * transformScale;
+    
+    // Ограничиваем сдвиг, чтобы края холста не заходили внутрь окна
+    const maxTranslateX = 0;
+    const minTranslateX = areaW - scaledW;
+    if (transformX > maxTranslateX) transformX = maxTranslateX;
+    if (transformX < minTranslateX) transformX = minTranslateX;
+    
+    const maxTranslateY = 0;
+    const minTranslateY = areaH - scaledH;
+    if (transformY > maxTranslateY) transformY = maxTranslateY;
+    if (transformY < minTranslateY) transformY = minTranslateY;
+}
+
 function applyGraphTransform() {
+    clampGraphTransform();
     const graphInner = document.querySelector('.graph-inner');
     if (graphInner) {
         graphInner.style.transform = `translate(${transformX}px, ${transformY}px) scale(${transformScale})`;
@@ -3130,7 +3170,8 @@ function setupGraphAreaPanZoom() {
         const oldScale = transformScale;
         let newScale = oldScale * (delta < 0 ? 1.1 : 0.9);
         newScale = Math.min(Math.max(newScale, 0.2), 5);
-        if (newScale === oldScale) return;
+        if (newScale === oldScale)
+            return;
         
         const rect = area.getBoundingClientRect();
         const mouseX = e.clientX - rect.left;
@@ -3142,6 +3183,49 @@ function setupGraphAreaPanZoom() {
         transformScale = newScale;
         applyGraphTransform();
     });
+}
+
+function expandGraphInner() {
+    const graphInner = document.querySelector('.graph-inner');
+    if (!graphInner) return;
+    
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    
+    // Находим границы всех блоков формул
+    for (let rect of rectangles.values()) {
+        const left = parseFloat(rect.element.style.left);
+        const top = parseFloat(rect.element.style.top);
+        const right = left + rect.element.offsetWidth;
+        const bottom = top + rect.element.offsetHeight;
+        minX = Math.min(minX, left);
+        minY = Math.min(minY, top);
+        maxX = Math.max(maxX, right);
+        maxY = Math.max(maxY, bottom);
+    }
+    
+    // Также учитываем блоки графиков
+    for (let block of graphBlocks.values()) {
+        const left = parseFloat(block.element.style.left);
+        const top = parseFloat(block.element.style.top);
+        const right = left + block.element.offsetWidth;
+        const bottom = top + block.element.offsetHeight;
+        minX = Math.min(minX, left);
+        minY = Math.min(minY, top);
+        maxX = Math.max(maxX, right);
+        maxY = Math.max(maxY, bottom);
+    }
+    
+    if (!isFinite(minX)) return; // нет блоков
+    
+    // Добавляем отступы (padding)
+    const padding = 500;
+    const newWidth = maxX - minX + padding * 2;
+    const newHeight = maxY - minY + padding * 2;
+    
+    // Устанавливаем размеры .graph-inner
+    graphInner.style.width = Math.max(graphInner.clientWidth, newWidth) + 'px';
+    graphInner.style.height = Math.max(graphInner.clientHeight, newHeight) + 'px';
+    applyGraphTransform();
 }
 
 const demos = [
