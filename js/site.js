@@ -938,6 +938,12 @@ let connectModeActive = false;              // Активен ли режим с
 let pendingSource = null;                   // Временно выбранный источник соединения { rectId, param, isOutput }
 
 let graphBlocks = new Map();
+let transformX = 0, transformY = 0, transformScale = 1;
+let isAreaPanning = false;
+let panAreaStartX = 0, panAreaStartY = 0;
+let panAreaStartTransformX = 0, panAreaStartTransformY = 0;
+
+
 let graphModeActive = false;        // активен ли режим выбора параметров для графика
 let selectingStart = false;         // ожидание выбора начального параметра
 let selectingEnd = false;           // ожидание выбора конечного параметра
@@ -984,29 +990,32 @@ function getRelativeCoords(e, container) {
  */
 function redrawParamLines() {
     svg.innerHTML = '';
-    const containerRect = graphArea.getBoundingClientRect();
-    if (!containerRect.width || !containerRect.height) return;
-    svg.setAttribute('width', containerRect.width);
-    svg.setAttribute('height', containerRect.height);
+    const graphInner = document.querySelector('.graph-inner');
+    if (!graphInner) return;
+    const w = graphInner.clientWidth;
+    const h = graphInner.clientHeight;
+    svg.setAttribute('width', w);
+    svg.setAttribute('height', h);
+    
     for (let conn of paramConnections) {
         const sourceRect = rectangles.get(conn.sourceRectId);
         const targetRect = rectangles.get(conn.targetRectId);
         if (!sourceRect || !targetRect) continue;
-        let sourcePortPos = getPortPosition(sourceRect, conn.sourceParam, true);
-        let targetPortPos = getPortPosition(targetRect, conn.targetParam, false);
-        if (!sourcePortPos || !targetPortPos) continue;
+        const sourcePos = getPortPosition(sourceRect, conn.sourceParam, true);
+        const targetPos = getPortPosition(targetRect, conn.targetParam, false);
+        if (!sourcePos || !targetPos) continue;
         const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
-        line.setAttribute("x1", sourcePortPos.x);
-        line.setAttribute("y1", sourcePortPos.y);
-        line.setAttribute("x2", targetPortPos.x);
-        line.setAttribute("y2", targetPortPos.y);
+        line.setAttribute("x1", sourcePos.x);
+        line.setAttribute("y1", sourcePos.y);
+        line.setAttribute("x2", targetPos.x);
+        line.setAttribute("y2", targetPos.y);
         line.setAttribute("stroke", "#f97316");
         line.setAttribute("stroke-width", "3");
         line.setAttribute("stroke-dasharray", "6 3");
         line.setAttribute("marker-end", "url(#arrowParam)");
         svg.appendChild(line);
     }
-    // Добавляем маркер-стрелку, если ещё не добавлен
+    
     if (!svg.querySelector('defs')) {
         const defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
         const marker = document.createElementNS("http://www.w3.org/2000/svg", "marker");
@@ -1035,7 +1044,8 @@ function redrawParamLines() {
 function getPortPosition(rect, paramName, isOutput) {
     const rectEl = rect.element;
     if (!rectEl) return null;
-    const containerBounds = graphArea.getBoundingClientRect();
+    
+    // Находим элемент порта
     let targetEl = null;
     if (isOutput) {
         targetEl = rectEl.querySelector('.target-port');
@@ -1050,10 +1060,16 @@ function getPortPosition(rect, paramName, isOutput) {
         }
     }
     if (!targetEl) return null;
-    const portBounds = targetEl.getBoundingClientRect();
-    const centerX = (portBounds.left + portBounds.right) / 2 - containerBounds.left;
-    const centerY = (portBounds.top + portBounds.bottom) / 2 - containerBounds.top;
-    return { x: centerX, y: centerY };
+    
+    // Получаем координаты порта относительно страницы
+    const portRect = targetEl.getBoundingClientRect();
+    const graphInnerRect = document.querySelector('.graph-inner').getBoundingClientRect();
+    
+    // Пересчитываем в координаты внутри .graph-inner (без учёта трансформации)
+    const x = portRect.left - graphInnerRect.left;
+    const y = portRect.top - graphInnerRect.top;
+    
+    return { x, y };
 }
 
 /**
@@ -1685,8 +1701,8 @@ function makeDraggable(element, rectId) {
     });
     function onMouseMove(e) {
         if (!dragging) return;
-        let newLeft = startLeft + (e.clientX - startX);
-        let newTop = startTop + (e.clientY - startY);
+        let newLeft = startLeft + (e.clientX - startX) / transformScale;
+        let newTop = startTop + (e.clientY - startY) / transformScale;
         const parentRect = graphArea.getBoundingClientRect();
         newLeft = Math.max(0, Math.min(newLeft, parentRect.width - element.offsetWidth));
         newTop = Math.max(0, Math.min(newTop, parentRect.height - element.offsetHeight));
@@ -1721,8 +1737,8 @@ function makeGraphBlockDraggable(element) {
 
     function onMouseMove(e) {
         if (!dragging) return;
-        let newLeft = startLeft + (e.clientX - startX);
-        let newTop = startTop + (e.clientY - startY);
+        let newLeft = startLeft + (e.clientX - startX) / transformScale;
+        let newTop = startTop + (e.clientY - startY) / transformScale;
         const parentRect = graphArea.getBoundingClientRect();
         newLeft = Math.max(0, Math.min(newLeft, parentRect.width - element.offsetWidth));
         newTop = Math.max(0, Math.min(newTop, parentRect.height - element.offsetHeight));
@@ -1811,6 +1827,10 @@ function clearWorkspace() {
     }
     updateParamConnectionsList();
     redrawParamLines();
+    transformX = 0;
+    transformY = 0;
+    transformScale = 1;
+    applyGraphTransform();
 }
 
 function serializeState() {
@@ -1822,12 +1842,12 @@ function serializeState() {
             formulaEq: rect.formulaEq || '',
             formulaName: rect.formulaName,
             vars: rect.vars,
-            swappable: rect.swappable,
             left: Number.parseFloat(rectEl.style.left),
             top: Number.parseFloat(rectEl.style.top),
             targetVar: rect.targetVar,
             manualValues: rect.manualValues,
-            rootSign: rect.rootSign
+            rootSign: rect.rootSign,
+            swappable: rect.isSwap !== undefined ? rect.isSwap : 1
         });
     }
     
@@ -1853,7 +1873,12 @@ function serializeState() {
         blocks: blocks,
         paramConnections: paramConnections,
         nextRectId: nextRectId,
-        graphs: graphs
+        graphs: graphs,
+        graphTransform: {
+            x: transformX,
+            y: transformY,
+            scale: transformScale
+        }
     };
 }
 
@@ -1936,7 +1961,18 @@ async function deserializeState(state) {
             }
         }
     }
-    return true;
+    if (state.graphTransform) {
+        transformX = state.graphTransform.x;
+        transformY = state.graphTransform.y;
+        transformScale = state.graphTransform.scale;
+    } else {
+        transformX = 0;
+        transformY = 0;
+        transformScale = 1;
+    }
+    applyGraphTransform();
+
+return true;
 }
 
 function saveToFile() {
@@ -3041,6 +3077,73 @@ function drawGraphInBlock(blockData) {
     ctx.restore();
 }
 
+function applyGraphTransform() {
+    const graphInner = document.querySelector('.graph-inner');
+    if (graphInner) {
+        graphInner.style.transform = `translate(${transformX}px, ${transformY}px) scale(${transformScale})`;
+        redrawParamLines();
+    }
+}
+
+function setupGraphAreaPanZoom() {
+    const area = graphArea;
+    if (!area) return;
+    
+    area.addEventListener('contextmenu', (e) => e.preventDefault());
+    
+    // Панорамирование (правая кнопка мыши)
+    area.addEventListener('mousedown', (e) => {
+        if (e.button === 2) {
+            e.preventDefault();
+            isAreaPanning = true;
+            panAreaStartX = e.clientX;
+            panAreaStartY = e.clientY;
+            panAreaStartTransformX = transformX;
+            panAreaStartTransformY = transformY;
+            area.style.cursor = 'grabbing';
+        }
+    });
+    
+    window.addEventListener('mousemove', (e) => {
+        if (!isAreaPanning) return;
+        const dx = e.clientX - panAreaStartX;
+        const dy = e.clientY - panAreaStartY;
+        transformX = panAreaStartTransformX + dx;
+        transformY = panAreaStartTransformY + dy;
+        applyGraphTransform();
+    });
+    
+    window.addEventListener('mouseup', (e) => {
+        if (e.button === 2) {
+            isAreaPanning = false;
+            area.style.cursor = 'default';
+        }
+    });
+    
+    // Масштабирование колёсиком (только если курсор не над canvas графика)
+    area.addEventListener('wheel', (e) => {
+        // Если целевой элемент – canvas внутри блока графика, не зумаем область, чтобы не конфликтовать
+        if (e.target.closest('canvas')) return;
+        
+        e.preventDefault();
+        const delta = e.deltaY > 0 ? 1 : -1;
+        const oldScale = transformScale;
+        let newScale = oldScale * (delta < 0 ? 1.1 : 0.9);
+        newScale = Math.min(Math.max(newScale, 0.2), 5);
+        if (newScale === oldScale) return;
+        
+        const rect = area.getBoundingClientRect();
+        const mouseX = e.clientX - rect.left;
+        const mouseY = e.clientY - rect.top;
+        const x0 = (mouseX - transformX) / oldScale;
+        const y0 = (mouseY - transformY) / oldScale;
+        transformX = mouseX - x0 * newScale;
+        transformY = mouseY - y0 * newScale;
+        transformScale = newScale;
+        applyGraphTransform();
+    });
+}
+
 const demos = [
     {
         name: "5 нетривиальных уравнений",
@@ -3836,4 +3939,6 @@ clearAllBtn.addEventListener('click', () => {
 window.addEventListener('resize', () => redrawParamLines());
 new ResizeObserver(() => redrawParamLines()).observe(graphArea);
 setupDragDrop();
+setupGraphAreaPanZoom();
+applyGraphTransform();
 setConnectMode(false);
