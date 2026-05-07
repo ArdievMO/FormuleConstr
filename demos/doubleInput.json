@@ -1,0 +1,103 @@
+{
+  "version": "2.0",
+  "blocks": [
+    {
+      "id": 1008,
+      "formulaEq": "F = m*a",
+      "formulaName": "II закон Ньютона",
+      "vars": [
+        "F",
+        "m",
+        "a"
+      ],
+      "left": 88.024,
+      "top": 61.0729,
+      "targetVar": "F",
+      "manualValues": {
+        "m": "10",
+        "a": "9.8"
+      },
+      "rootSign": 1
+    },
+    {
+      "id": 1009,
+      "formulaEq": "P = F/S",
+      "formulaName": "Давление",
+      "vars": [
+        "P",
+        "F",
+        "S"
+      ],
+      "left": 496.024,
+      "top": 145.073,
+      "targetVar": "P",
+      "manualValues": {
+        "F": "",
+        "S": "3"
+      },
+      "rootSign": 1
+    },
+    {
+      "id": 1010,
+      "formulaEq": "P = ρ*g*h",
+      "formulaName": "Давление жидкости",
+      "vars": [
+        "P",
+        "ρ",
+        "g",
+        "h"
+      ],
+      "left": 870.024,
+      "top": 351.073,
+      "targetVar": "ρ",
+      "manualValues": {
+        "ρ": "",
+        "g": "",
+        "h": "15",
+        "P": ""
+      },
+      "rootSign": 1
+    },
+    {
+      "id": 1012,
+      "formulaEq": "Fт = m*g",
+      "formulaName": "Сила тяжести",
+      "vars": [
+        "Fт",
+        "m",
+        "g"
+      ],
+      "left": 495.024,
+      "top": 396.073,
+      "targetVar": "g",
+      "manualValues": {
+        "m": "5",
+        "g": "",
+        "Fт": "98"
+      },
+      "rootSign": 1
+    }
+  ],
+  "paramConnections": [
+    {
+      "sourceRectId": 1008,
+      "sourceParam": "F",
+      "targetRectId": 1009,
+      "targetParam": "F"
+    },
+    {
+      "sourceRectId": 1009,
+      "sourceParam": "P",
+      "targetRectId": 1010,
+      "targetParam": "P"
+    },
+    {
+      "sourceRectId": 1012,
+      "sourceParam": "g",
+      "targetRectId": 1010,
+      "targetParam": "g"
+    }
+  ],
+  "nextRectId": 1013,
+  "graphs": []
+}

@@ -1,0 +1,127 @@
+{
+  "version": "2.0",
+  "blocks": [
+    {
+      "id": 1077,
+      "formulaEq": "F = m*a",
+      "formulaName": "II закон Ньютона",
+      "vars": [
+        "F",
+        "m",
+        "a"
+      ],
+      "left": 284.023,
+      "top": 313.039,
+      "targetVar": "F",
+      "manualValues": {
+        "a": "3",
+        "m": "1"
+      },
+      "rootSign": 1
+    },
+    {
+      "id": 1078,
+      "formulaEq": "P = F/S",
+      "formulaName": "Давление",
+      "vars": [
+        "P",
+        "F",
+        "S"
+      ],
+      "left": 641.023,
+      "top": 166.039,
+      "targetVar": "P",
+      "manualValues": {
+        "F": "",
+        "S": "4"
+      },
+      "rootSign": 1
+    },
+    {
+      "id": 1079,
+      "formulaEq": "Fт = m*g",
+      "formulaName": "Сила тяжести",
+      "vars": [
+        "Fт",
+        "m",
+        "g"
+      ],
+      "left": 651.023,
+      "top": 493.039,
+      "targetVar": "g",
+      "manualValues": {
+        "m": "5",
+        "g": ""
+      },
+      "rootSign": 1
+    },
+    {
+      "id": 1080,
+      "formulaEq": "P = ρ*g*h",
+      "formulaName": "Давление жидкости",
+      "vars": [
+        "P",
+        "ρ",
+        "g",
+        "h"
+      ],
+      "left": 1018.02,
+      "top": 330.039,
+      "targetVar": "ρ",
+      "manualValues": {
+        "g": "",
+        "h": "6",
+        "ρ": ""
+      },
+      "rootSign": 1
+    }
+  ],
+  "paramConnections": [
+    {
+      "sourceRectId": 1077,
+      "sourceParam": "F",
+      "targetRectId": 1078,
+      "targetParam": "F"
+    },
+    {
+      "sourceRectId": 1077,
+      "sourceParam": "F",
+      "targetRectId": 1079,
+      "targetParam": "Fт"
+    },
+    {
+      "sourceRectId": 1078,
+      "sourceParam": "P",
+      "targetRectId": 1080,
+      "targetParam": "P"
+    },
+    {
+      "sourceRectId": 1079,
+      "sourceParam": "g",
+      "targetRectId": 1080,
+      "targetParam": "g"
+    }
+  ],
+  "nextRectId": 1087,
+  "graphs": [
+    {
+      "startSpec": {
+        "rectId": 1077,
+        "paramName": "m",
+        "isOutput": false
+      },
+      "endSpec": {
+        "rectId": 1080,
+        "paramName": "ρ",
+        "isOutput": true
+      },
+      "left": 1441,
+      "top": 261,
+      "xMin": -4.532937455679425,
+      "xMax": 5.5705306513222705,
+      "yMin": -4.868869193657481,
+      "yMax": 5.2345989133442075,
+      "isInverse": false
+    }
+  ]
+}

@@ -1,0 +1,176 @@
+{
+  "version": "2.0",
+  "blocks": [
+    {
+      "id": 1017,
+      "formulaEq": "N = A/t",
+      "formulaName": "Мощность",
+      "vars": [
+        "N",
+        "A",
+        "t"
+      ],
+      "left": 1217,
+      "top": 191,
+      "targetVar": "A",
+      "manualValues": {
+        "t": "",
+        "N": "0.5",
+        "A": ""
+      },
+      "rootSign": 1
+    },
+    {
+      "id": 1018,
+      "formulaEq": "X = X0 + υ0*t + (a*t^2)/2",
+      "formulaName": "Координата при равноускоренном движении",
+      "vars": [
+        "X",
+        "X0",
+        "υ0",
+        "t",
+        "a"
+      ],
+      "left": 892,
+      "top": 92,
+      "targetVar": "t",
+      "manualValues": {
+        "X0": "1",
+        "υ0": "1.4142",
+        "a": "1",
+        "t": "",
+        "X": "2"
+      },
+      "rootSign": 1
+    },
+    {
+      "id": 1019,
+      "formulaEq": "A = F*S*cos(α)",
+      "formulaName": "Работа",
+      "vars": [
+        "A",
+        "F",
+        "S",
+        "α"
+      ],
+      "left": 1562,
+      "top": 166,
+      "targetVar": "α",
+      "manualValues": {
+        "F": "1",
+        "S": "1",
+        "A": "",
+        "α": ""
+      },
+      "rootSign": 1
+    },
+    {
+      "id": 1020,
+      "formulaEq": "S = (υ2^2 - υ0^2)/(2*a)",
+      "formulaName": "Перемещение при равноускоренном движении (без времени)",
+      "vars": [
+        "S",
+        "υ2",
+        "υ0",
+        "a"
+      ],
+      "left": 560,
+      "top": 124,
+      "targetVar": "υ0",
+      "manualValues": {
+        "υ0": "",
+        "a": "1",
+        "υ2": "2",
+        "S": "1"
+      },
+      "rootSign": 1
+    },
+    {
+      "id": 1071,
+      "formulaEq": "S = (υ + υ0)*t/2",
+      "formulaName": "Перемещение при равноускоренном движении (средняя скорость)",
+      "vars": [
+        "S",
+        "υ",
+        "υ0",
+        "t"
+      ],
+      "left": 200.023,
+      "top": 147.039,
+      "targetVar": "S",
+      "manualValues": {
+        "υ0": "0.2",
+        "t": "1",
+        "υ": "3"
+      },
+      "rootSign": 1
+    }
+  ],
+  "paramConnections": [
+    {
+      "sourceRectId": 1020,
+      "sourceParam": "υ0",
+      "targetRectId": 1018,
+      "targetParam": "υ0"
+    },
+    {
+      "sourceRectId": 1018,
+      "sourceParam": "t",
+      "targetRectId": 1017,
+      "targetParam": "t"
+    },
+    {
+      "sourceRectId": 1017,
+      "sourceParam": "A",
+      "targetRectId": 1019,
+      "targetParam": "A"
+    },
+    {
+      "sourceRectId": 1071,
+      "sourceParam": "S",
+      "targetRectId": 1020,
+      "targetParam": "S"
+    }
+  ],
+  "nextRectId": 1075,
+  "graphs": [
+    {
+      "startSpec": {
+        "rectId": 1019,
+        "paramName": "α",
+        "isOutput": false
+      },
+      "endSpec": {
+        "rectId": 1071,
+        "paramName": "υ",
+        "isOutput": true
+      },
+      "left": 1440,
+      "top": 488,
+      "xMin": -100,
+      "xMax": 100,
+      "yMin": -100,
+      "yMax": 100,
+      "isInverse": true
+    },
+    {
+      "startSpec": {
+        "rectId": 1020,
+        "paramName": "S",
+        "isOutput": false
+      },
+      "endSpec": {
+        "rectId": 1018,
+        "paramName": "t",
+        "isOutput": true
+      },
+      "left": 619,
+      "top": 466,
+      "xMin": -33.654765177399455,
+      "xMax": 29.107354040600562,
+      "yMin": -25.40174221898932,
+      "yMax": 37.36037699901068,
+      "isInverse": false
+    }
+  ]
+}

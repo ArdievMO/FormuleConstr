@@ -1,0 +1,224 @@
+{
+  "version": "2.0",
+  "blocks": [
+    {
+      "id": 1087,
+      "formulaEq": "P = F/S",
+      "formulaName": "Давление",
+      "vars": [
+        "P",
+        "F",
+        "S"
+      ],
+      "left": 0,
+      "top": 0,
+      "targetVar": "P",
+      "manualValues": {
+        "F": "1",
+        "S": "1"
+      },
+      "rootSign": 1
+    },
+    {
+      "id": 1088,
+      "formulaEq": "A = F*S*cos(α)",
+      "formulaName": "Работа",
+      "vars": [
+        "A",
+        "F",
+        "S",
+        "α"
+      ],
+      "left": 0,
+      "top": 204.039,
+      "targetVar": "F",
+      "manualValues": {
+        "S": "1",
+        "A": "1",
+        "α": "1",
+        "F": "1"
+      },
+      "rootSign": 1
+    },
+    {
+      "id": 1089,
+      "formulaEq": "Fл = B*q*υ*sin(α)",
+      "formulaName": "Сила Лоренца",
+      "vars": [
+        "Fл",
+        "B",
+        "q",
+        "υ",
+        "α"
+      ],
+      "left": 0,
+      "top": 458.039,
+      "targetVar": "α",
+      "manualValues": {
+        "q": "1",
+        "υ": "1",
+        "α": "1",
+        "Fл": "1",
+        "B": "1"
+      },
+      "rootSign": 1
+    },
+    {
+      "id": 1090,
+      "formulaEq": "N = N0*2^(-t/T)",
+      "formulaName": "Закон радиоактивного распада",
+      "vars": [
+        "N",
+        "N0",
+        "t",
+        "T"
+      ],
+      "left": 0,
+      "top": 761.039,
+      "targetVar": "N",
+      "manualValues": {
+        "N0": "1",
+        "t": "1",
+        "T": "1"
+      },
+      "rootSign": 1
+    }
+  ],
+  "paramConnections": [],
+  "nextRectId": 1105,
+  "graphs": [
+    {
+      "startSpec": {
+        "rectId": 1087,
+        "paramName": "S",
+        "isOutput": false
+      },
+      "endSpec": {
+        "rectId": 1087,
+        "paramName": "P",
+        "isOutput": true
+      },
+      "left": 306,
+      "top": 0,
+      "xMin": -22.063450724475338,
+      "xMax": 22.99797759878502,
+      "yMin": -21.849724121915095,
+      "yMax": 23.211704201345277,
+      "isInverse": false
+    },
+    {
+      "startSpec": {
+        "rectId": 1088,
+        "paramName": "α",
+        "isOutput": false
+      },
+      "endSpec": {
+        "rectId": 1088,
+        "paramName": "F",
+        "isOutput": true
+      },
+      "left": 864,
+      "top": 0,
+      "xMin": -36.744685663584605,
+      "xMax": 32.99100235641542,
+      "yMin": -37.09580367049352,
+      "yMax": 32.63988434950651,
+      "isInverse": false
+    },
+    {
+      "startSpec": {
+        "rectId": 1088,
+        "paramName": "F",
+        "isOutput": false
+      },
+      "endSpec": {
+        "rectId": 1088,
+        "paramName": "α",
+        "isOutput": true
+      },
+      "left": 1421,
+      "top": 0,
+      "xMin": -20.314596259980007,
+      "xMax": 20.863630158949807,
+      "yMin": -20.354042227573974,
+      "yMax": 20.82418419135582,
+      "isInverse": true
+    },
+    {
+      "startSpec": {
+        "rectId": 1089,
+        "paramName": "Fл",
+        "isOutput": false
+      },
+      "endSpec": {
+        "rectId": 1089,
+        "paramName": "α",
+        "isOutput": false
+      },
+      "left": 307,
+      "top": 553,
+      "xMin": -5.925842697279237,
+      "xMax": 6.996321081174113,
+      "yMin": -6.685067807670855,
+      "yMax": 6.237095970782494,
+      "isInverse": false
+    },
+    {
+      "startSpec": {
+        "rectId": 1089,
+        "paramName": "B",
+        "isOutput": false
+      },
+      "endSpec": {
+        "rectId": 1089,
+        "paramName": "α",
+        "isOutput": true
+      },
+      "left": 866,
+      "top": 552,
+      "xMin": -8.201302956803993,
+      "xMax": 10.341542165467725,
+      "yMin": -10.840452445838949,
+      "yMax": 7.702392676432758,
+      "isInverse": false
+    },
+    {
+      "startSpec": {
+        "rectId": 1090,
+        "paramName": "t",
+        "isOutput": false
+      },
+      "endSpec": {
+        "rectId": 1090,
+        "paramName": "N",
+        "isOutput": false
+      },
+      "left": 1420.03,
+      "top": 553,
+      "xMin": -100,
+      "xMax": 100,
+      "yMin": -100,
+      "yMax": 100,
+      "isInverse": false
+    },
+    {
+      "startSpec": {
+        "rectId": 1090,
+        "paramName": "N",
+        "isOutput": false
+      },
+      "endSpec": {
+        "rectId": 1090,
+        "paramName": "T",
+        "isOutput": true
+      },
+      "left": 1973,
+      "top": 551,
+      "xMin": -9.913347168359563,
+      "xMax": 17.1036871851003,
+      "yMin": -12.222933069719248,
+      "yMax": 14.794101283740586,
+      "isInverse": true
+    }
+  ]
+}
