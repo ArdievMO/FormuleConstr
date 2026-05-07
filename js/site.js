@@ -2297,12 +2297,10 @@ function prepareGraphEvaluation(startSpec, endSpec) {
     
     // Топологический порядок для всех нужных блоков (можно BFS по уровням)
     const levels = new Map();
-    const order = [];
     const queueLevel = [startRect.id];
     levels.set(startRect.id, 0);
     while (queueLevel.length) {
         const curr = queueLevel.shift();
-        order.push(curr);
         for (let nb of neighbors.get(curr)) {
             if (needed.has(nb) && !levels.has(nb)) {
                 levels.set(nb, levels.get(curr) + 1);
@@ -2322,7 +2320,6 @@ function prepareGraphEvaluation(startSpec, endSpec) {
     
     return {
         canCompute: true,
-        order: order,           // порядок вычисления (включая все блоки)
         needed: needed,
         pathSet: pathSet,
         externalBlocks: externalBlocks,
@@ -2383,16 +2380,15 @@ async function buildGraph(startSpec, endSpec) {
         allSignCombinations.push(signs);
     }
     
-    const colors = ['#f97316', '#3b82f6', '#10b981', '#8b5cf6', '#ec489a', '#06b6d4', '#f59e0b', '#ef4444', '#a855f7', '#14b8a6'];
+    const color = ['#ef4444'];
     const datasets = [];
-    for (let idx = 0; idx < allSignCombinations.length; idx++) {
-        const signs = allSignCombinations[idx];
-        const color = colors[idx % colors.length];
+    for (const element of allSignCombinations) {
+        const signs = element;
         const points = [];
         for (let x of xValues) {
             let y;
             try {
-                y = computeSubgraph(startRect, startSpec.paramName, x, signs, needed, order, endRect, endSpec, null);
+                y = computeSubgraph(startRect, startSpec.paramName, x, signs, needed, endRect, endSpec);
                 if (Math.abs(y) > 1e6)
                     y = null; // разрыв при слишком больших значениях
                 points.push({ x, y: (y !== null && isFinite(y)) ? y : null });
@@ -2480,7 +2476,7 @@ async function buildInverseGraph(startSpec, endSpec, targetMap) {
     
     const canvas = blockDiv.querySelector('canvas');
     const wrapper = blockDiv.querySelector('.graph-canvas-wrapper');
-    const pointsCount = 2000;
+    const pointsCount = 20000;
     const xMin = -100, xMax = 100;
     const xValues = Array.from({ length: pointsCount + 1 }, (_, i) => xMin + (i / pointsCount) * (xMax - xMin));
     
@@ -2501,7 +2497,8 @@ async function buildInverseGraph(startSpec, endSpec, targetMap) {
         for (let x of xValues) {
             let y;
             try {
-                y = computeSubgraph(startRect, startSpec.paramName, x, signs, needed, order, endRect, endSpec, targetMap);
+                y = computeSubgraph(startRect, startSpec.paramName, x, signs, needed, endRect, endSpec, targetMap, preparation.pathSet);
+
                 if (Math.abs(y) > 1e6)
                     y = null; // разрыв при слишком больших значениях
                 points.push({ x, y: (y !== null && isFinite(y)) ? y : null });
@@ -2636,11 +2633,10 @@ function computeOutCode(x, y, rect) {
 }
 
 // Быстрое вычисление подграфа для заданного x и комбинации знаков
-function computeSubgraph(startRect, startParam, x, signsMap, needed, order, endRect, endSpec, targetMap = null) {
-    // inversePath – массив объектов { rectId, targetVar } для каждого блока на пути (если обратное вычисление)
+function computeSubgraph(startRect, startParam, x, signsMap, needed, endRect, endSpec, targetMap = null, pathSet = null) {
     const savedTargets = [];
-    let isNormalGraph = 1;
-    if (targetMap) {
+    let isReverseGraph = targetMap !== null;
+    if (isReverseGraph) {
         for (let item of targetMap) {
             const rect = rectangles.get(item.rectId);
             if (rect && rect.targetVar !== item.targetVar) {
@@ -2650,7 +2646,30 @@ function computeSubgraph(startRect, startParam, x, signsMap, needed, order, endR
             }
         }
     }
-    else isNormalGraph = 0;
+    
+    // ---- Построение правильного порядка вычисления ----
+    let computeOrder = [];
+    if (isReverseGraph && pathSet) {
+        // Получаем полный топологический порядок
+        const fullOrder = getTopologicalOrder();
+        if (!fullOrder) return null;
+        // Разделяем: mainPath (блоки из pathSet) и others
+        const mainBlocks = [];
+        const otherBlocks = [];
+        for (let id of fullOrder) {
+            if (pathSet.has(id)) mainBlocks.push(id);
+            else otherBlocks.push(id);
+        }
+        // Инвертируем mainBlocks
+        mainBlocks.reverse();
+        // Итоговый порядок: otherBlocks (в прямом порядке) + mainBlocks (в обратном)
+        computeOrder = [...otherBlocks, ...mainBlocks];
+    } else {
+        // Для прямого графика – обычный топологический порядок
+        const fullOrder = getTopologicalOrder();
+        if (!fullOrder) return null;
+        computeOrder = fullOrder.filter(id => needed.has(id));
+    }
     
     // Установка X (или Y при обратной зависимости)
     const originalManual = startRect.manualValues[startParam];
@@ -2665,16 +2684,21 @@ function computeSubgraph(startRect, startParam, x, signsMap, needed, order, endR
     for (let [rect, sign] of signsMap.entries()) rect.tempSign = sign;
     for (let id of needed) rectangles.get(id).computedValue = null;
     
-    for (let id of order) {
+    for (let id of computeOrder) {
+        if (!needed.has(id)) continue; // только нужные блоки
         const rect = rectangles.get(id);
         const inputs = {};
         let ok = true;
         for (let v of rect.vars) {
             if (v === rect.targetVar) continue;
-            if (isNormalGraph === 1){
-                const conn = paramConnections.find(c => c.sourceRectId === id && c.sourceParam === v);
-                if (conn) {
-                    const src = rectangles.get(conn.targetRectId);
+            if (isReverseGraph) {
+                const conn = paramConnections.find(c =>
+                                                   (c.sourceRectId === id || c.targetRectId === id)
+                                                   && (c.sourceParam === v || c.targetParam === v));
+                if (conn && startParam !== v) {
+                    const src = rectangles.get(conn.targetRectId === id
+                                               ? conn.sourceRectId
+                                               : conn.targetRectId);
                     if (src && src.computedValue !== null) inputs[v] = src.computedValue;
                     else { ok = false; break; }
                 } else {
@@ -2682,8 +2706,7 @@ function computeSubgraph(startRect, startParam, x, signsMap, needed, order, endR
                     if (man !== undefined && man.trim() !== '' && !isNaN(parseFloat(man))) inputs[v] = parseFloat(man);
                     else { ok = false; break; }
                 }
-            }
-            else {
+            } else {
                 const conn = paramConnections.find(c => c.targetRectId === id && c.targetParam === v);
                 if (conn) {
                     const src = rectangles.get(conn.sourceRectId);
@@ -2707,33 +2730,31 @@ function computeSubgraph(startRect, startParam, x, signsMap, needed, order, endR
     
     let y = null;
     if (endRect.targetVar === endSpec.paramName) {
-        // Параметр является вычисляемым (целевым) для этого блока
         y = endRect.computedValue;
     } else {
-        
-        if (isNormalGraph === 1) {
-        // Параметр – входной, ищем связь или ручное значение
-            const conn = paramConnections.find(c => c.targetRectId === endSpec.rectId && c.targetParam === endSpec.paramName);
+        if (isReverseGraph) {
+            const conn = paramConnections.find(c =>
+                                                (c.sourceRectId === endSpec.rectId
+                                                || c.targetRectId === endSpec.rectId)
+                                                && (c.sourceParam === endSpec.paramName
+                                                || c.targetParam === endSpec.paramName))
             if (conn) {
-                const srcRect = rectangles.get(conn.sourceRectId);
+                const srcRect = rectangles.get(conn.targetRectId === id
+                                               ? conn.sourceRectId
+                                               : conn.targetRectId);
                 y = srcRect ? srcRect.computedValue : null;
             } else {
                 const manualVal = endRect.manualValues[endSpec.paramName];
-                if (manualVal !== undefined && manualVal.trim() !== '' && !isNaN(parseFloat(manualVal))) {
-                    y = parseFloat(manualVal);
-                }
+                if (manualVal !== undefined && manualVal.trim() !== '' && !isNaN(parseFloat(manualVal))) y = parseFloat(manualVal);
             }
-        }
-        else {
+        } else {
             const conn = paramConnections.find(c => c.sourceRectId === endSpec.rectId && c.sourceParam === endSpec.paramName);
             if (conn) {
                 const srcRect = rectangles.get(conn.targetRectId);
                 y = srcRect ? srcRect.computedValue : null;
             } else {
                 const manualVal = endRect.manualValues[endSpec.paramName];
-                if (manualVal !== undefined && manualVal.trim() !== '' && !isNaN(parseFloat(manualVal))) {
-                    y = parseFloat(manualVal);
-                }
+                if (manualVal !== undefined && manualVal.trim() !== '' && !isNaN(parseFloat(manualVal))) y = parseFloat(manualVal);
             }
         }
     }
@@ -2744,15 +2765,14 @@ function computeSubgraph(startRect, startParam, x, signsMap, needed, order, endR
     if (originalManual !== undefined) startRect.manualValues[startParam] = originalManual;
     for (let rect of signsMap.keys()) delete rect.tempSign;
     
-    if (targetMap) {
+    if (isReverseGraph) {
         for (let saved of savedTargets) {
             saved.rect.targetVar = saved.oldTarget;
             saved.rect.solverFunc = saved.oldSolver;
         }
     }
-
-    if (Math.abs(y) > 1e6)
-        y = null;
+    
+    if (Math.abs(y) > 1e6) y = null;
     return y;
 }
 
