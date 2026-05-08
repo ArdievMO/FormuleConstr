@@ -235,6 +235,9 @@ body {
     left: 0;
     width: 2000px;
     height: 2000px;
+    backface-visibility: hidden;
+    transform-style: preserve-3d;
+    -webkit-font-smoothing: antialiased;
     transform-origin: 0 0;
     will-change: transform;
 }
@@ -286,6 +289,9 @@ body {
     backdrop-filter: blur(2px);
     font-family: 'Segoe UI', sans-serif;
     padding: 12px;
+    will-change: transform;
+    transform: translateZ(0);
+    backface-visibility: hidden;
 }
 
 .formula-card:active {
@@ -309,6 +315,9 @@ body {
     flex: 1;
     margin-right: 8px;
     text-align: center;
+    backface-visibility: hidden;
+    will-change: transform;
+    transform-style: preserve-3d;
 }
 
 .delete-card {
@@ -328,10 +337,17 @@ body {
     display: flex;
     flex-direction: column;
     pointer-events: auto;
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    will-change: transform;
+    transform-style: preserve-3d;
 }
 
 .graph-card .card-header {
     flex-shrink: 0;
+    backface-visibility: hidden;
+    will-change: transform;
+    transform-style: preserve-3d;
 }
 
 .graph-canvas-wrapper {

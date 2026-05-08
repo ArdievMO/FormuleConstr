@@ -990,26 +990,30 @@ function getRelativeCoords(e, container) {
  */
 function redrawParamLines() {
     svg.innerHTML = '';
-    const containerRect = graphArea.getBoundingClientRect();
-    if (!containerRect.width || !containerRect.height) return;
-    svg.setAttribute('width', containerRect.width);
-    svg.setAttribute('height', containerRect.height);
+    const inner = document.querySelector('.graph-inner');
+    if (!inner) return;
+    const w = inner.clientWidth;
+    const h = inner.clientHeight;
+    svg.setAttribute('width', w);
+    svg.setAttribute('height', h);
     
     for (let conn of paramConnections) {
         const sourceRect = rectangles.get(conn.sourceRectId);
         const targetRect = rectangles.get(conn.targetRectId);
         if (!sourceRect || !targetRect) continue;
-        let sourcePortPos = getPortPosition(sourceRect, conn.sourceParam, true);
-        let targetPortPos = getPortPosition(targetRect, conn.targetParam, false);
-        if (!sourcePortPos || !targetPortPos) continue;
+        const sourcePos = getPortPosition(sourceRect, conn.sourceParam, true);
+        const targetPos = getPortPosition(targetRect, conn.targetParam, false);
+        if (!sourcePos || !targetPos) continue;
         const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
-        line.setAttribute("x1", sourcePortPos.x);
-        line.setAttribute("y1", sourcePortPos.y);
-        line.setAttribute("x2", targetPortPos.x);
-        line.setAttribute("y2", targetPortPos.y);
+        // Округляем координаты для устранения дрожания
+        line.setAttribute("x1", Math.round(sourcePos.x + 10));
+        line.setAttribute("y1", Math.round(sourcePos.y + 10));
+        line.setAttribute("x2", Math.round(targetPos.x + 10));
+        line.setAttribute("y2", Math.round(targetPos.y + 10));
         line.setAttribute("stroke", "#f97316");
         line.setAttribute("stroke-width", "3");
         line.setAttribute("stroke-dasharray", "6 3");
+        line.setAttribute("vector-effect", "non-scaling-stroke");
         line.setAttribute("marker-end", "url(#arrowParam)");
         svg.appendChild(line);
     }
@@ -1042,7 +1046,6 @@ function redrawParamLines() {
 function getPortPosition(rect, paramName, isOutput) {
     const rectEl = rect.element;
     if (!rectEl) return null;
-    
     let targetEl = null;
     if (isOutput) {
         targetEl = rectEl.querySelector('.target-port');
@@ -1058,12 +1061,14 @@ function getPortPosition(rect, paramName, isOutput) {
     }
     if (!targetEl) return null;
     
-    const portRect = targetEl.getBoundingClientRect();
-    const graphAreaRect = graphArea.getBoundingClientRect();
-    return {
-        x: portRect.left - graphAreaRect.left,
-        y: portRect.top - graphAreaRect.top
-    };
+    // Координаты порта относительно блока (не используем getBoundingClientRect)
+    const offsetX = targetEl.offsetLeft;
+    const offsetY = targetEl.offsetTop;
+    // Позиция блока в системе .graph-inner
+    const blockLeft = parseFloat(rectEl.style.left);
+    const blockTop = parseFloat(rectEl.style.top);
+    
+    return { x: blockLeft + offsetX, y: blockTop + offsetY };
 }
 
 /**
@@ -1483,6 +1488,8 @@ function createFormulaBlock(formulaEq, formulaName, varsArray, isSwappable, left
         formulaEq: formulaEq,
         formulaName: formulaName,
         vars: varsArray,
+        offsetLeft: rectDiv.offsetLeft,
+        offsetTop: rectDiv.offsetTop,
         swappable: isSwappable,
         targetVar: targetVar,
         manualValues: manualValues,
@@ -3182,6 +3189,7 @@ function setupGraphAreaPanZoom() {
         transformY = mouseY - y0 * newScale;
         transformScale = newScale;
         applyGraphTransform();
+        redrawParamLines();
     });
 }
 
