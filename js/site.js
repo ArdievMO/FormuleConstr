@@ -1611,7 +1611,11 @@ function handlePortClick(rectId, param, isOutput) {
         } else if (selectingEnd) {
             graphEndParam = { rectId, paramName: param, isOutput: isOutput };
             // Оба параметра выбраны – строим график
-            buildGraph(graphStartParam, graphEndParam);
+            const rect = rectangles.get(rectId);
+            const rectEl = rect.element;
+            let x = Math.max(0, rectEl.offsetLeft + 100);
+            let y = Math.max(0, rectEl.offsetTop + 100);
+            buildGraph(graphStartParam, graphEndParam, x, y);
             deactivateGraphMode();
         }
         return;
@@ -1801,10 +1805,10 @@ function setupDragDrop() {
         if (!raw) return;
         const data = JSON.parse(raw);
         const coords = getRelativeCoords(e, graphArea);
-        let x = (coords.x - transformX) / transformScale;//coords.x - 145,
-            y = (coords.y - transformY) / transformScale;//coords.y - 70;
-        x = Math.max(0, x - 145);//10, Math.min(x, graphArea.clientWidth - 290));
-        y = Math.max(0, y - 30);//10, Math.min(y, graphArea.clientHeight - 200));
+        let x = (coords.x - transformX) / transformScale;
+            y = (coords.y - transformY) / transformScale;
+        x = Math.max(0, x - 145);
+        y = Math.max(0, y - 30);
         // Все блоки создаём одинаково
         createFormulaBlock(data.eq, data.name, data.vars, data.swappable, x, y);
         redrawParamLines();
