@@ -943,7 +943,7 @@ let isAreaPanning = false;
 let panAreaStartX = 0, panAreaStartY = 0;
 let panAreaStartTransformX = 0, panAreaStartTransformY = 0;
 
-
+let isPanning = false;
 let graphModeActive = false;        // активен ли режим выбора параметров для графика
 let selectingStart = false;         // ожидание выбора начального параметра
 let selectingEnd = false;           // ожидание выбора конечного параметра
@@ -2640,7 +2640,7 @@ async function buildInverseGraph(startSpec, endSpec, targetMap, leftX = 100, top
 }
 
 function setupGraphPanZoom(canvas, blockData) {
-    let isPanning = false;
+    isPanning = false;
     let panStartX, panStartY;
     let startXMin, startXMax, startYMin, startYMax;
     
@@ -2648,7 +2648,7 @@ function setupGraphPanZoom(canvas, blockData) {
     
     // Правая кнопка (код 2) для панорамирования
     canvas.addEventListener('mousedown', (e) => {
-        if (e.button === 2) {
+        if (e.button === 0) {
             e.preventDefault();
             isPanning = true;
             panStartX = e.clientX;
@@ -2661,7 +2661,7 @@ function setupGraphPanZoom(canvas, blockData) {
         }
     });
     
-    window.addEventListener('mousemove', (e) => {
+    canvas.addEventListener('mousemove', (e) => {
         if (!isPanning) return;
         const dx = e.clientX - panStartX;
         const dy = e.clientY - panStartY;
@@ -2687,8 +2687,10 @@ function setupGraphPanZoom(canvas, blockData) {
         blockData.redraw();   // теперь работает
     });
     
-    window.addEventListener('mouseup', (e) => {
-        if (e.button === 2) isPanning = false;
+    canvas.addEventListener('mouseup', (e) => {
+        if (e.button === 0)
+            isPanning = false;
+        isAreaPanning = false;
     });
     
     canvas.addEventListener('wheel', (e) => {
@@ -3140,6 +3142,7 @@ function setupGraphAreaPanZoom() {
     
     // Панорамирование (правая кнопка мыши)
     area.addEventListener('mousedown', (e) => {
+        if (e.target.closest('canvas')) return;
         if (e.button === 2) {
             e.preventDefault();
             isAreaPanning = true;
@@ -3151,8 +3154,9 @@ function setupGraphAreaPanZoom() {
         }
     });
     
-    window.addEventListener('mousemove', (e) => {
+    area.addEventListener('mousemove', (e) => {
         if (!isAreaPanning) return;
+        if (e.target.closest('canvas')) return;
         const dx = e.clientX - panAreaStartX;
         const dy = e.clientY - panAreaStartY;
         transformX = panAreaStartTransformX + dx;
@@ -3160,11 +3164,13 @@ function setupGraphAreaPanZoom() {
         applyGraphTransform();
     });
     
-    window.addEventListener('mouseup', (e) => {
+    area.addEventListener('mouseup', (e) => {
+        if (e.target.closest('canvas')) return;
         if (e.button === 2) {
             isAreaPanning = false;
             area.style.cursor = 'default';
         }
+        isPanning = false;
     });
     
     // Масштабирование колёсиком (только если курсор не над canvas графика)

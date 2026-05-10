@@ -244,18 +244,8 @@ body {
 
 .rectangles-layer {
     position: relative;
-    z-index: 15;
 }
 
-.svg-layer {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
-    z-index: 20;
-}
 #linesSvg {
     position: absolute;
     top: 0;
@@ -266,14 +256,13 @@ body {
     z-index: 20;
 }
 
-.graphic-layer {
+.graphic-layer {    
     position:absolute;
     top:0;
     left:0;
     width:100%;
     height:100%;
     pointer-events:none;
-    z-index: 25;
 }
 
 /* карточка формулы */
@@ -292,6 +281,7 @@ body {
     will-change: transform;
     transform: translateZ(0);
     backface-visibility: hidden;
+    z-index: 15;
 }
 
 .formula-card:active {
@@ -341,6 +331,7 @@ body {
     backface-visibility: hidden;
     will-change: transform;
     transform-style: preserve-3d;
+    z-index: 25;
 }
 
 .graph-card .card-header {
