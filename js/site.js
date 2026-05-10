@@ -1801,9 +1801,10 @@ function setupDragDrop() {
         if (!raw) return;
         const data = JSON.parse(raw);
         const coords = getRelativeCoords(e, graphArea);
-        let x = coords.x - 145, y = coords.y - 70;
-        x = Math.max(10, Math.min(x, graphArea.clientWidth - 290));
-        y = Math.max(10, Math.min(y, graphArea.clientHeight - 200));
+        let x = (coords.x - transformX) / transformScale;//coords.x - 145,
+            y = (coords.y - transformY) / transformScale;//coords.y - 70;
+        x = Math.max(0, x - 145);//10, Math.min(x, graphArea.clientWidth - 290));
+        y = Math.max(0, y - 30);//10, Math.min(y, graphArea.clientHeight - 200));
         // Все блоки создаём одинаково
         createFormulaBlock(data.eq, data.name, data.vars, data.swappable, x, y);
         redrawParamLines();
